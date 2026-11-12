@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор коктейлей</title>
+<style>
+:root{
+  --bg:#14110f;--panel:#1e1916;--panel2:#2a231f;--line:#3a312b;
+  --txt:#f1e9e0;--mut:#a89b8f;--acc:#f0a830;--acc-ink:#1b1206;
+  --ok:#6ccf8a;--warn:#f0c040;--bad:#ef6a5b;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.4 "Segoe UI",system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.2px}
+nav{display:flex;gap:6px}
+nav button{background:transparent;color:var(--mut);border:1px solid transparent;padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:var(--panel2);color:var(--acc);border-color:var(--line)}
+.tools{margin-left:auto;display:flex;gap:6px}
+button,select,input{font:inherit;color:var(--txt)}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+button.danger:hover{border-color:var(--bad);color:var(--bad)}
+input,select{background:#120f0d;border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:0}
+input[type=number]{width:100%;text-align:right}
+main{padding:18px 20px;max-width:1280px;margin:0 auto}
+.tab{display:none}.tab.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:16px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:0 0 10px;font-weight:600}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.bar.end{margin:12px 0 0}
+.fields{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr;gap:10px;margin-bottom:12px}
+@media(max-width:700px){.fields{grid-template-columns:1fr 1fr}}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mut)}
+label.f input,label.f select{font-size:15px;color:var(--txt)}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;color:var(--mut);font-weight:600;text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:5px 6px;border-bottom:1px solid #2b241f;vertical-align:middle}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.dim{color:var(--mut)}
+tfoot td{font-weight:700;border-bottom:none;border-top:1px solid var(--line)}
+td select{width:100%}
+.x{padding:2px 9px;font-size:18px;line-height:1.2;color:var(--mut)}
+.x:hover{color:var(--bad);border-color:var(--bad)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tile small{display:block;color:var(--mut);font-size:12px}
+.tile b{font-size:22px;font-variant-numeric:tabular-nums}
+.tile.big b{font-size:28px}
+.tile.acc{border-color:var(--acc)}.tile.acc b{color:var(--acc)}
+.tile.sm b{font-size:17px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.mode{display:grid;grid-template-columns:auto 1fr 90px;gap:8px 10px;align-items:center;margin-bottom:10px}
+.mode input[type=radio]{accent-color:var(--acc);width:17px;height:17px}
+.hint{color:var(--mut);font-size:12px;margin:4px 0 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sep{height:1px;background:var(--line);margin:12px 0}
+.menu td a{color:var(--txt);cursor:pointer;text-decoration:none;border-bottom:1px dotted var(--mut)}
+.menu td a:hover{color:var(--acc)}
+.menu th{cursor:pointer;user-select:none}
+.menu th:hover{color:var(--acc)}
+.ingtbl input{padding:5px 7px}
+.ingtbl td:nth-child(1) input{min-width:170px}
+.ingtbl td:nth-child(2) input{min-width:120px}
+.ingtbl td:nth-child(9) input{min-width:260px;color:var(--mut);font-size:13px}
+.ingtbl input[type=number]{min-width:70px}
+.scroll{overflow-x:auto}
+footer{color:var(--mut);font-size:12px;padding:6px 20px 24px;max-width:1280px;margin:0 auto}
+@media print{
+  body{background:#fff;color:#000}
+  header,.tools,.bar,footer,nav,#tab-calc,#tab-ing{display:none!important}
+  #tab-menu{display:block!important}
+  .card{border:none;background:#fff}
+  td,th{color:#000!important;border-color:#bbb!important}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍸 Калькулятор коктейлей</h1>
+  <nav id="tabs">
+    <button data-tab="calc" class="on">Калькулятор</button>
+    <button data-tab="menu">Меню и цены</button>
+    <button data-tab="ing">Ингредиенты</button>
+  </nav>
+  <div class="tools">
+    <button id="btnExport" title="Сохранить все данные в файл">Экспорт</button>
+    <button id="btnImport" title="Загрузить данные из файла">Импорт</button>
+    <button id="btnReset" class="danger" title="Вернуть исходные данные">Сбросить</button>
+    <input type="file" id="file" accept=".json" hidden>
+  </div>
+</header>
+
+<main>
+<!-- ============ КАЛЬКУЛЯТОР ============ -->
+<section id="tab-calc" class="tab on">
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Рецепт</h2>
+        <div class="bar">
+          <select id="sel" style="flex:1;min-width:200px"></select>
+          <button id="bNew">+ Новый</button>
+        </div>
+        <div class="fields">
+          <label class="f">Название<input id="rName" type="text"></label>
+          <label class="f">Способ приготовления<select id="rMethod"></select></label>
+          <label class="f">Разбавление, %<input id="rDil" type="number" min="0" max="100" step="1"></label>
+          <label class="f">Порций<input id="portions" type="number" min="1" step="1"></label>
+        </div>
+        <div class="scroll">
+        <table id="rec">
+          <thead><tr>
+            <th>Ингредиент</th><th class="num" style="width:90px">Кол-во</th><th style="width:34px"></th>
+            <th class="num">На <span id="nP">1</span> порц.</th><th class="num">Стоимость</th><th class="num">Вес, г</th><th style="width:36px"></th>
+          </tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><td colspan="4">Итого на 1 порцию</td><td class="num" id="tCost"></td><td class="num" id="tW"></td><td></td></tr></tfoot>
+        </table>
+        </div>
+        <div class="bar end">
+          <button id="bAdd">+ Ингредиент</button>
+          <span style="flex:1"></span>
+          <button id="bSave" class="pri">Сохранить</button>
+          <button id="bSaveAs">Сохранить как новый</button>
+          <button id="bDel" class="danger">Удалить</button>
+        </div>
+        <p class="hint">Лёд учитывается в стоимости, но не входит в вес и объём напитка. 1 дэш/кап ≈ 1 мл.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Наценка и цена</h2>
+        <div class="mode">
+          <input type="radio" name="mode" value="markup" id="m1"><label for="m1">Наценка, %</label><input id="markup" type="number" min="0" step="5">
+          <input type="radio" name="mode" value="fc" id="m2"><label for="m2">Желаемый фудкост, %</label><input id="foodCost" type="number" min="1" max="99" step="1">
+          <input type="radio" name="mode" value="manual" id="m3"><label for="m3">Своя цена за порцию</label><input id="manual" type="number" min="0" step="10">
+        </div>
+        <div class="row2">
+          <label class="f">Округлять цену вверх до
+            <select id="round"><option value="0">не округлять</option><option value="1">1</option><option value="5">5</option><option value="10">10</option><option value="50">50</option><option value="100">100</option><option value="500">500</option></select>
+          </label>
+          <label class="f">Валюта<input id="currency" type="text" maxlength="5"></label>
+        </div>
+        <p class="hint" id="modeHint"></p>
+      </div>
+      <div class="card" id="result"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ МЕНЮ ============ -->
+<section id="tab-menu" class="tab">
+  <div class="card">
+    <div class="bar">
+      <h2 style="margin:0;flex:1">Все коктейли — себестоимость и цена по текущей наценке</h2>
+      <button id="bCsv">Скачать CSV (Excel)</button>
+      <button id="bPrint">Печать</button>
+    </div>
+    <div class="scroll"><table class="menu" id="menuTbl"></table></div>
+    <p class="hint" id="menuHint"></p>
+  </div>
+</section>
+
+<!-- ============ ИНГРЕДИЕНТЫ ============ -->
+<section id="tab-ing" class="tab">
+  <div class="card">
+    <div class="bar">
+      <input id="ingFilter" type="search" placeholder="Поиск ингредиента…" style="flex:1;min-width:200px">
+      <button id="bAddIng" class="pri">+ Добавить ингредиент</button>
+    </div>
+    <div class="scroll">
+    <table class="ingtbl" id="ingTbl">
+      <thead><tr>
+        <th>Название</th><th>Категория</th><th>Ед.</th>
+        <th class="num">Фасовка</th><th class="num">Цена за фасовку</th><th class="num">Цена за ед.</th>
+        <th class="num">Крепость, %</th><th class="num" title="Для жидкостей — плотность г/мл; для штучных — вес одной штуки в граммах">Плотн. г/мл<br>/ вес шт, г</th><th title="✓ — цена найдена в магазинах Алматы, ≈ — оценка">Источник цены</th><th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+    <datalist id="cats"></datalist>
+    <p class="hint">Цены — розничные, Алматы, средний сегмент (в тенге). Отметка ✓ — цена найдена в алматинских магазинах (AlmaWine, Alco24, Elitalco, Luxalco, Wolt), ≈ — оценка, её стоит уточнить. Бары обычно покупают дешевле розницы: впишите свои закупочные цены, и все расчёты обновятся автоматически. Данные хранятся в этом браузере; для переноса на другой компьютер используйте «Экспорт» / «Импорт».</p>
+  </div>
+</section>
+</main>
+<footer>Крепость и плотность — типовые значения для напитков. Расчёт крепости приблизителен (без учёта сжатия объёма).</footer>
+
+<script>
+'use strict';
+/* ===================== ВСПОМОГАТЕЛЬНОЕ ===================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(n,d=2)=>isFinite(n)?n.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const num=v=>{const n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:0};
+const clone=o=>JSON.parse(JSON.stringify(o));
+const UNITS={ml:'мл',g:'г',pcs:'шт'};
+const ICE='Лёд';
+const METHODS={build:['В бокале (билд)',10],shake:['Шейк',25],stir:['Стир (в стакане)',20],blend:['Блендер',30],layer:['Слоями (шот)',0]};
+const ETHANOL_DENSITY=0.789;
+const LS='cocktail-calc-v2'; // v2: цены Алматы в тенге (старые данные в рублях не подхватываются)
+
+/* ===================== БАЗА ИНГРЕДИЕНТОВ =====================
+   [id, название, категория, ед., фасовка, цена за фасовку (₸), крепость %, плотность г/мл | вес шт г, источник цены]
+   Цены — розница Алматы, средний сегмент. ✓ — найдено в магазинах, ≈ — оценка. */
+const ING_DATA=[
+ ['vodka','Водка','Крепкий алкоголь','ml',700,7900,40,0.948,'✓ Русский Стандарт 0,7 л — 7 940, Finlandia — 9 030 (AlmaWine)'],
+ ['gin','Джин','Крепкий алкоголь','ml',700,8500,40,0.945,'✓ Beefeater 0,7 л — 7 339–10 335, Gordon’s — 7 632 (Elitalco)'],
+ ['rum_w','Ром белый','Крепкий алкоголь','ml',700,9500,40,0.945,'✓ Bacardi Carta Blanca 0,7 л — 9 097–10 283 (Alco24)'],
+ ['rum_d','Ром тёмный','Крепкий алкоголь','ml',700,10000,40,0.95,'✓ Bacardi Carta Negra 0,7 л — 10 283 (Alco24)'],
+ ['tequila','Текила сильвер','Крепкий алкоголь','ml',700,9500,40,0.945,'✓ Olmeca Blanco 0,7 л — 9 545 (Alco24)'],
+ ['bourbon','Бурбон','Крепкий алкоголь','ml',700,9000,40,0.945,'✓ Jim Beam White — 7 220, Jack Daniel’s — 11 050 (Luxalco); взята середина'],
+ ['scotch','Виски шотландский (бленд)','Крепкий алкоголь','ml',700,12000,40,0.945,'≈ оценка: бленды среднего сегмента; уточните у поставщика'],
+ ['cognac','Коньяк','Крепкий алкоголь','ml',500,8000,40,0.945,'≈ оценка для 0,5 л среднего сегмента (Martell VS — 32 461 за 0,7 л, это премиум)'],
+ ['triple','Трипл сек (апельсиновый ликёр)','Ликёры','ml',700,7500,30,1.04,'≈ оценка для бара (Cointreau 0,7 л — 13 080, Elitalco)'],
+ ['kahlua','Кофейный ликёр (Калуа)','Ликёры','ml',700,15000,16,1.11,'✓ Kahlúa 0,7 л — 10 088–17 055 (Elitalco); взято ≈ верх диапазона'],
+ ['baileys','Бейлис','Ликёры','ml',700,10100,17,1.06,'✓ Baileys Original 0,7 л — 10 088 (Elitalco)'],
+ ['amaretto','Амаретто','Ликёры','ml',700,9000,28,1.07,'≈ оценка (в открытых источниках цена не найдена)'],
+ ['curacao','Блю кюрасао','Ликёры','ml',700,6500,20,1.1,'≈ оценка (в открытых источниках цена не найдена)'],
+ ['malibu','Кокосовый ликёр (Малибу)','Ликёры','ml',700,8500,21,1.05,'≈ оценка (в открытых источниках цена не найдена)'],
+ ['aperol','Апероль','Аперитивы и вермуты','ml',700,9500,11,1.08,'✓ Aperol 0,7 л — 7 688–12 065, Alco24 — 9 361–10 582'],
+ ['campari','Кампари','Аперитивы и вермуты','ml',700,11300,25,1.06,'✓ Campari 0,7 л — 10 011–14 365 (Alco24, Elitalco)'],
+ ['vermouth_r','Вермут красный (Россо)','Аперитивы и вермуты','ml',1000,6500,15,1.05,'✓ Martini Rosso 1 л — 6 499 (Wolt, Алматы)'],
+ ['vermouth_d','Вермут сухой (Драй)','Аперитивы и вермуты','ml',1000,6500,18,0.99,'≈ по аналогии с Martini Bianco/Rosso 1 л — 6 499 (Wolt)'],
+ ['prosecco','Просекко','Вино и игристое','ml',750,6500,11,0.99,'≈ оценка (Lillet Blanc 0,75 л — 6 481, Alco24)'],
+ ['angostura','Ангостура биттер','Вино и игристое','ml',200,10000,44.7,0.98,'≈ оценка (в открытых источниках цена не найдена)'],
+ ['lime_j','Сок лайма','Соки и сиропы','ml',1000,3900,0,1.03,'≈ аналог RC сироп «лимонный сок» 1 л — 3 930 (Satu.kz); свежий лайм дороже'],
+ ['lemon_j','Сок лимона','Соки и сиропы','ml',1000,1700,0,1.03,'✓ Liotti натуральный лимонный сок 1 л — 1 700 (Satu.kz)'],
+ ['orange_j','Апельсиновый сок','Соки и сиропы','ml',1000,800,0,1.04,'≈ оценка (сокосодержащий напиток 1 л — 550, OLX; 100% сок дороже)'],
+ ['cranberry','Клюквенный сок','Соки и сиропы','ml',1000,1800,0,1.05,'≈ оценка'],
+ ['pineapple','Ананасовый сок','Соки и сиропы','ml',1000,900,0,1.05,'≈ оценка'],
+ ['tomato','Томатный сок','Соки и сиропы','ml',1000,700,0,1.03,'≈ оценка'],
+ ['syrup','Сахарный сироп 1:1','Соки и сиропы','ml',1000,350,0,1.23,'≈ себестоимость домашнего сиропа (сахар + вода)'],
+ ['grenadine','Гренадин','Соки и сиропы','ml',1000,5500,0,1.3,'≈ сиропы Monin 1 л — 5 000–10 000 (Satu.kz)'],
+ ['coconut','Кокосовый крем','Соки и сиропы','ml',1000,4500,0,1.08,'≈ оценка'],
+ ['cream','Сливки 20%','Соки и сиропы','ml',1000,1500,0,1.0,'≈ оценка'],
+ ['espresso','Эспрессо (порция 30 мл ≈ 120 ₸)','Соки и сиропы','ml',1000,4000,0,1.0,'≈ оценка себестоимости порции эспрессо'],
+ ['soda','Содовая','Газированные','ml',1000,300,0,1.0,'≈ оценка'],
+ ['tonic','Тоник','Газированные','ml',1000,900,0,1.03,'≈ оценка (цены Schweppes в Алматы не найдены)'],
+ ['cola','Кола','Газированные','ml',1000,589,0,1.04,'✓ Coca-Cola 1 л — 589 (Wolt, Алматы)'],
+ ['gbeer','Имбирное пиво','Газированные','ml',1000,2500,0,1.03,'≈ оценка'],
+ ['ice','Лёд (кубики)',ICE,'g',1000,80,0,0,'≈ оценка себестоимости'],
+ ['mint','Мята','Гарнир и прочее','g',100,500,0,0,'≈ оценка (рынок)'],
+ ['salt','Соль для ободка','Гарнир и прочее','g',1000,300,0,0,'≈ оценка'],
+ ['egg','Яичный белок','Гарнир и прочее','pcs',1,90,0,30,'≈ оценка (1 яйцо)'],
+ ['lime_w','Долька лайма','Гарнир и прочее','pcs',1,30,0,8,'≈ оценка (лайм ~3 000 ₸/кг)'],
+ ['lemon_w','Долька лимона','Гарнир и прочее','pcs',1,25,0,8,'≈ оценка'],
+ ['orange_w','Долька апельсина','Гарнир и прочее','pcs',1,30,0,20,'≈ оценка'],
+ ['olive','Оливка','Гарнир и прочее','pcs',1,40,0,4,'≈ оценка'],
+ ['cherry','Коктейльная вишня','Гарнир и прочее','pcs',1,50,0,5,'≈ оценка'],
+];
+/* [id, название, способ, [[ингредиент, кол-во], …]]  (классические пропорции IBA, мл) */
+const COCKTAIL_DATA=[
+ ['mojito','Мохито','build',[['rum_w',50],['lime_j',25],['syrup',20],['mint',8],['lime_w',2],['soda',60],['ice',150]]],
+ ['margarita','Маргарита','shake',[['tequila',50],['triple',20],['lime_j',15],['salt',2],['lime_w',1],['ice',80]]],
+ ['cosmo','Космополитан','shake',[['vodka',40],['triple',15],['cranberry',30],['lime_j',15],['ice',80]]],
+ ['daiquiri','Дайкири','shake',[['rum_w',45],['lime_j',25],['syrup',15],['ice',80]]],
+ ['negroni','Негрони','stir',[['gin',30],['campari',30],['vermouth_r',30],['orange_w',1],['ice',150]]],
+ ['spritz','Апероль Шприц','build',[['prosecco',90],['aperol',60],['soda',30],['orange_w',1],['ice',150]]],
+ ['oldfashioned','Олд фэшн','stir',[['bourbon',50],['syrup',10],['angostura',2],['orange_w',1],['ice',150]]],
+ ['whiskysour','Виски сауэр','shake',[['bourbon',45],['lemon_j',25],['syrup',15],['egg',1],['cherry',1],['orange_w',1],['ice',100]]],
+ ['martini','Мартини драй','stir',[['gin',60],['vermouth_d',10],['olive',1],['ice',100]]],
+ ['whiterussian','Белый русский','build',[['vodka',50],['kahlua',20],['cream',30],['ice',150]]],
+ ['pinacolada','Пина колада','blend',[['rum_w',50],['coconut',30],['pineapple',90],['cherry',1],['ice',200]]],
+ ['longisland','Лонг-Айленд','build',[['vodka',15],['gin',15],['rum_w',15],['tequila',15],['triple',15],['lemon_j',25],['syrup',20],['cola',30],['lemon_w',1],['ice',150]]],
+ ['bloodymary','Кровавая Мэри','build',[['vodka',45],['tomato',90],['lemon_j',15],['salt',1],['ice',150]]],
+ ['sunrise','Текила санрайз','build',[['tequila',45],['orange_j',90],['grenadine',15],['orange_w',1],['ice',150]]],
+ ['gintonic','Джин-тоник','build',[['gin',50],['tonic',150],['lime_w',1],['ice',150]]],
+ ['cubalibre','Куба Либре','build',[['rum_w',50],['cola',120],['lime_j',10],['lime_w',1],['ice',150]]],
+ ['moscowmule','Московский мул','build',[['vodka',45],['lime_j',15],['gbeer',120],['lime_w',1],['ice',150]]],
+ ['espressomartini','Эспрессо мартини','shake',[['vodka',50],['kahlua',10],['espresso',30],['syrup',10],['ice',80]]],
+ ['sidecar','Сайдкар','shake',[['cognac',50],['triple',20],['lemon_j',20],['ice',80]]],
+ ['b52','Б-52 (шот)','layer',[['kahlua',20],['baileys',20],['triple',20]]],
+];
+
+function defaults(){
+  return {
+    settings:{currency:'₸',mode:'markup',markup:300,foodCost:25,manual:0,round:100,portions:1},
+    ingredients:ING_DATA.map(([id,name,cat,unit,pack,price,abv,w,note])=>({id,name,cat,unit,pack,price,abv,dens:unit==='ml'?w:0,pw:unit==='pcs'?w:0,note:note||''})),
+    cocktails:COCKTAIL_DATA.map(([id,name,method,items])=>({id,name,method,dil:METHODS[method][1],items:items.map(([ing,amt])=>({ing,amt}))})),
+    current:'mojito'
+  };
+}
+
+/* ===================== СОСТОЯНИЕ ===================== */
+let S, ING={}, draft, dirty=false;
+function load(){try{const j=localStorage.getItem(LS);return j?JSON.parse(j):null}catch(e){return null}}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+function reindex(){ING={};S.ingredients.forEach(g=>ING[g.id]=g)}
+function valid(d){return d&&Array.isArray(d.ingredients)&&Array.isArray(d.cocktails)&&d.settings}
+function init(){
+  const d=load();
+  S=valid(d)?d:defaults();
+  reindex();
+  openCocktail(S.cocktails.find(c=>c.id===S.current)||S.cocktails[0],true);
+}
+
+/* ===================== РАСЧЁТ ===================== */
+function calc(rec){
+  const R={rows:[],cost:0,w:0,vol:0,eth:0};
+  for(const it of rec.items){
+    const g=ING[it.ing], a=Math.max(0,num(it.amt));
+    if(!g){R.rows.push({cost:0,w:0,miss:true});continue}
+    const cost=a*g.price/(g.pack||1);
+    const w=g.unit==='ml'?a*(g.dens||1):g.unit==='g'?a:a*(g.pw||0);
+    R.cost+=cost;
+    if(g.cat===ICE){R.rows.push({cost,w,ice:true});continue}
+    R.w+=w;
+    if(g.unit==='ml'){R.vol+=a;R.eth+=a*(g.abv||0)/100}
+    R.rows.push({cost,w});
+  }
+  const d=Math.max(0,num(rec.dil))/100;
+  R.water=R.vol*d; R.volF=R.vol+R.water; R.wF=R.w+R.water;
+  R.abv=R.volF>0?R.eth/R.volF*100:0;
+  R.alc=R.eth*ETHANOL_DENSITY;
+  return R;
+}
+function priceFor(cost){
+  const s=S.settings;
+  if(s.mode==='manual')return num(s.manual);
+  let p=s.mode==='fc'?(s.foodCost>0?cost/(s.foodCost/100):0):cost*(1+num(s.markup)/100);
+  const st=+s.round||0;
+  if(st>0)p=Math.ceil(p/st-1e-9)*st;
+  return p;
+}
+const money=n=>fmt(n,0)+' '+esc(S.settings.currency);
+const fcClass=f=>f<=0?'':f<=30?'ok':f<=40?'warn':'bad';
+
+/* ===================== ВКЛАДКИ ===================== */
+function showTab(t){
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $$('.tab').forEach(s=>s.classList.toggle('on',s.id==='tab-'+t));
+  if(t==='calc')renderCalc();
+  if(t==='menu')renderMenu();
+  if(t==='ing')renderIng();
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)showTab(b.dataset.tab)});
+
+/* ===================== КАЛЬКУЛЯТОР ===================== */
+function openCocktail(c,force){
+  if(!force&&dirty&&!confirm('Несохранённые изменения будут потеряны. Продолжить?')){renderSelect();return false}
+  draft=clone(c);dirty=false;S.current=c.id;save();return true;
+}
+function renderSelect(){
+  const list=[...S.cocktails].sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  let html=list.map(c=>`<option value="${esc(c.id)}"${c.id===draft.id?' selected':''}>${esc(c.name)}</option>`).join('');
+  if(!S.cocktails.some(c=>c.id===draft.id))html=`<option value="" selected>— новый рецепт —</option>`+html;
+  $('#sel').innerHTML=html;
+}
+function ingOptions(sel){
+  const cats={};
+  S.ingredients.forEach(g=>(cats[g.cat]=cats[g.cat]||[]).push(g));
+  return Object.keys(cats).map(c=>`<optgroup label="${esc(c)}">${cats[c].map(g=>`<option value="${esc(g.id)}"${g.id===sel?' selected':''}>${esc(g.name)}</option>`).join('')}</optgroup>`).join('');
+}
+function renderCalc(){
+  renderSelect();
+  const s=S.settings;
+  $('#rName').value=draft.name;
+  $('#rMethod').innerHTML=Object.entries(METHODS).map(([k,v])=>`<option value="${k}"${k===draft.method?' selected':''}>${v[0]}</option>`).join('');
+  $('#rDil').value=draft.dil;
+  $('#portions').value=s.portions;
+  $(`input[name=mode][value=${s.mode}]`).checked=true;
+  $('#markup').value=s.markup;$('#foodCost').value=s.foodCost;$('#manual').value=s.manual;
+  $('#round').value=String(s.round);$('#currency').value=s.currency;
+  renderRows();
+}
+function renderRows(){
+  $('#rec tbody').innerHTML=draft.items.map((it,i)=>`<tr data-i="${i}">
+    <td><select class="ing">${ingOptions(it.ing)}</select></td>
+    <td><input class="amt" type="number" min="0" step="any" value="${esc(it.amt)}"></td>
+    <td class="dim unit"></td><td class="num dim tot"></td><td class="num cost"></td><td class="num wt"></td>
+    <td><button class="x" title="Убрать">×</button></td></tr>`).join('');
+  recalc();
+}
+function recalc(){
+  const N=Math.max(1,Math.floor(num(S.settings.portions))||1);
+  const R=calc(draft);
+  $('#nP').textContent=N;
+  $$('#rec tbody tr').forEach((tr,i)=>{
+    const it=draft.items[i],g=ING[it.ing],r=R.rows[i];
+    $('.unit',tr).textContent=g?UNITS[g.unit]:'';
+    const a=Math.max(0,num(it.amt));
+    $('.tot',tr).textContent=g?fmt(a*N,a*N%1?1:0)+' '+UNITS[g.unit]:'';
+    $('.cost',tr).textContent=fmt(r.cost,1);
+    $('.wt',tr).textContent=r.ice?'лёд':fmt(r.w,1);
+  });
+  $('#tCost').textContent=money(R.cost);
+  $('#tW').textContent=fmt(R.w,1);
+  renderResult(R,N);
+}
+function renderResult(R,N){
+  const s=S.settings, price=priceFor(R.cost), profit=price-R.cost;
+  const fc=price>0?R.cost/price*100:0, mg=price>0?profit/price*100:0, mk=R.cost>0?profit/R.cost*100:0;
+  const hint={markup:`Цена = себестоимость × (1 + ${fmt(s.markup,0)}/100) = × ${fmt(1+num(s.markup)/100,2)}`,
+              fc:`Цена = себестоимость ÷ ${fmt(s.foodCost,0)}% (доля сырья в цене)`,
+              manual:'Цена задана вручную — показаны фактические наценка и фудкост.'}[s.mode];
+  $('#modeHint').textContent=hint;
+  $('#result').innerHTML=`
+    <h2>Результат — ${esc(draft.name||'без названия')}</h2>
+    <div class="stats">
+      <div class="tile big"><small>Себестоимость порции</small><b>${money(R.cost)}</b></div>
+      <div class="tile big acc"><small>Цена в меню</small><b>${money(price)}</b></div>
+      <div class="tile"><small>Прибыль с порции</small><b class="${profit>=0?'ok':'bad'}">${money(profit)}</b></div>
+      <div class="tile"><small>Фактическая наценка</small><b>${fmt(mk,0)}%</b></div>
+      <div class="tile"><small>Фудкост (доля сырья)</small><b class="${fcClass(fc)}">${fmt(fc,1)}%</b></div>
+      <div class="tile"><small>Маржа</small><b>${fmt(mg,1)}%</b></div>
+    </div>
+    <div class="sep"></div>
+    <div class="stats">
+      <div class="tile sm"><small>Объём напитка</small><b>${fmt(R.volF,0)} мл</b></div>
+      <div class="tile sm"><small>Вес напитка</small><b>${fmt(R.wF,0)} г</b></div>
+      <div class="tile sm"><small>Крепость</small><b>${fmt(R.abv,1)}%</b></div>
+      <div class="tile sm"><small>Чистого спирта</small><b>${fmt(R.alc,1)} г</b></div>
+    </div>
+    ${N>1?`<div class="sep"></div>
+    <div class="stats">
+      <div class="tile"><small>Себестоимость ${N} порц.</small><b>${money(R.cost*N)}</b></div>
+      <div class="tile"><small>Выручка / прибыль ${N} порц.</small><b>${money(price*N)}</b><small>прибыль ${money(profit*N)}</small></div>
+    </div>`:''}`;
+}
+function markDirty(){dirty=true}
+
+$('#sel').addEventListener('change',e=>{
+  const c=S.cocktails.find(x=>x.id===e.target.value);
+  if(c&&openCocktail(c))renderCalc();
+});
+$('#bNew').addEventListener('click',()=>{
+  if(dirty&&!confirm('Несохранённые изменения будут потеряны. Продолжить?'))return;
+  draft={id:'',name:'Новый коктейль',method:'shake',dil:METHODS.shake[1],items:[{ing:'vodka',amt:50},{ing:'ice',amt:100}]};
+  dirty=true;renderCalc();
+});
+$('#rName').addEventListener('input',e=>{draft.name=e.target.value;markDirty();renderResult(calc(draft),Math.max(1,Math.floor(num(S.settings.portions))||1))});
+$('#rMethod').addEventListener('change',e=>{draft.method=e.target.value;draft.dil=METHODS[draft.method][1];$('#rDil').value=draft.dil;markDirty();recalc()});
+$('#rDil').addEventListener('input',e=>{draft.dil=num(e.target.value);markDirty();recalc()});
+$('#portions').addEventListener('input',e=>{S.settings.portions=Math.max(1,Math.floor(num(e.target.value))||1);save();recalc()});
+
+const recBody=$('#rec tbody');
+recBody.addEventListener('input',e=>{
+  if(!e.target.classList.contains('amt'))return;
+  draft.items[+e.target.closest('tr').dataset.i].amt=e.target.value;markDirty();recalc();
+});
+recBody.addEventListener('change',e=>{
+  if(!e.target.classList.contains('ing'))return;
+  draft.items[+e.target.closest('tr').dataset.i].ing=e.target.value;markDirty();recalc();
+});
+recBody.addEventListener('click',e=>{
+  const b=e.target.closest('.x');if(!b)return;
+  draft.items.splice(+b.closest('tr').dataset.i,1);markDirty();renderRows();
+});
+$('#bAdd').addEventListener('click',()=>{
+  draft.items.push({ing:S.ingredients[0].id,amt:30});markDirty();renderRows();
+  const sels=$$('#rec select.ing');sels[sels.length-1].focus();
+});
+function cleanDraft(){
+  draft.name=(draft.name||'').trim()||'Без названия';
+  draft.items=draft.items.map(it=>({ing:it.ing,amt:Math.max(0,num(it.amt))}));
+}
+$('#bSave').addEventListener('click',()=>{
+  cleanDraft();
+  const i=S.cocktails.findIndex(c=>c.id===draft.id);
+  if(i>=0)S.cocktails[i]=clone(draft);
+  else{draft.id='c'+Date.now();S.cocktails.push(clone(draft))}
+  S.current=draft.id;dirty=false;save();renderCalc();
+});
+$('#bSaveAs').addEventListener('click',()=>{
+  cleanDraft();
+  if(S.cocktails.some(c=>c.name===draft.name))draft.name+=' (копия)';
+  draft.id='c'+Date.now();S.cocktails.push(clone(draft));
+  S.current=draft.id;dirty=false;save();renderCalc();
+});
+$('#bDel').addEventListener('click',()=>{
+  const i=S.cocktails.findIndex(c=>c.id===draft.id);
+  if(i<0){alert('Этот рецепт ещё не сохранён.');return}
+  if(!confirm(`Удалить рецепт «${draft.name}»? Это нельзя отменить.`))return;
+  S.cocktails.splice(i,1);
+  if(!S.cocktails.length)S.cocktails.push(defaults().cocktails[0]);
+  openCocktail(S.cocktails[0],true);renderCalc();
+});
+
+/* настройки наценки */
+function bindSetting(id,key,parse){
+  $(id).addEventListener('input',e=>{S.settings[key]=parse(e.target.value);save();recalc()});
+}
+bindSetting('#markup','markup',num);
+bindSetting('#foodCost','foodCost',num);
+bindSetting('#manual','manual',num);
+bindSetting('#currency','currency',v=>v||'₸');
+$('#round').addEventListener('change',e=>{S.settings.round=+e.target.value;save();recalc()});
+$$('input[name=mode]').forEach(r=>r.addEventListener('change',e=>{S.settings.mode=e.target.value;save();recalc()}));
+
+/* ===================== МЕНЮ ===================== */
+let sortKey='name',sortDir=1;
+function menuRows(){
+  const rows=S.cocktails.map(c=>{
+    const R=calc(c),price=priceFor(R.cost),profit=price-R.cost;
+    return {id:c.id,name:c.name,vol:R.volF,abv:R.abv,cost:R.cost,price,profit,fc:price>0?R.cost/price*100:0};
+  });
+  rows.sort((a,b)=>{
+    const x=a[sortKey],y=b[sortKey];
+    return (typeof x==='string'?x.localeCompare(y,'ru'):x-y)*sortDir;
+  });
+  return rows;
+}
+const MENU_COLS=[['name','Коктейль'],['vol','Объём, мл'],['abv','Крепость, %'],['cost','Себестоимость'],['price','Цена'],['profit','Прибыль'],['fc','Фудкост, %']];
+function renderMenu(){
+  const rows=menuRows();
+  $('#menuTbl').innerHTML=`<thead><tr>${MENU_COLS.map(([k,t],i)=>`<th data-k="${k}" class="${i?'num':''}">${t}${k===sortKey?(sortDir>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${
+    rows.map(r=>`<tr><td><a data-id="${esc(r.id)}">${esc(r.name)}</a></td><td class="num">${fmt(r.vol,0)}</td><td class="num">${fmt(r.abv,1)}</td><td class="num">${fmt(r.cost,0)}</td><td class="num"><b>${fmt(r.price,0)}</b></td><td class="num">${fmt(r.profit,0)}</td><td class="num ${fcClass(r.fc)}">${fmt(r.fc,1)}</td></tr>`).join('')}</tbody>`;
+  const s=S.settings;
+  $('#menuHint').textContent='Режим цены: '+({markup:`наценка ${fmt(s.markup,0)}%`,fc:`фудкост ${fmt(s.foodCost,0)}%`,manual:'ручная цена (одинаковая для всех — смените режим на вкладке «Калькулятор»)'}[s.mode])+
+    `. Валюта: ${s.currency}. Нажмите на название, чтобы открыть рецепт; на заголовок — чтобы отсортировать.`;
+}
+$('#menuTbl').addEventListener('click',e=>{
+  const a=e.target.closest('a[data-id]');
+  if(a){const c=S.cocktails.find(x=>x.id===a.dataset.id);if(c&&openCocktail(c)){showTab('calc')}return}
+  const th=e.target.closest('th[data-k]');
+  if(th){const k=th.dataset.k;if(sortKey===k)sortDir=-sortDir;else{sortKey=k;sortDir=1}renderMenu()}
+});
+$('#bPrint').addEventListener('click',()=>window.print());
+function download(name,text,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+$('#bCsv').addEventListener('click',()=>{
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"', n=(v,d)=>fmt(v,d).replace(/ |\s/g,'');
+  const lines=[MENU_COLS.map(c=>q(c[1])).join(';')].concat(menuRows().map(r=>
+    [q(r.name),n(r.vol,0),n(r.abv,1),n(r.cost,0),n(r.price,0),n(r.profit,0),n(r.fc,1)].join(';')));
+  download('cocktail_menu.csv','﻿'+lines.join('\r\n'),'text/csv;charset=utf-8');
+});
+
+/* ===================== ИНГРЕДИЕНТЫ ===================== */
+function unitCostText(g){
+  const u=g.price/(g.pack||1);
+  let t=`${fmt(u,2)} ${S.settings.currency}/${UNITS[g.unit]}`;
+  if(g.unit==='ml')t+=` · 50 мл = ${fmt(u*50,0)}`;
+  return t;
+}
+function ingRow(g){
+  const ml=g.unit==='ml',pcs=g.unit==='pcs';
+  return `<tr data-id="${esc(g.id)}">
+   <td><input data-f="name" value="${esc(g.name)}"></td>
+   <td><input data-f="cat" list="cats" value="${esc(g.cat)}"></td>
+   <td><select data-f="unit">${['ml','g','pcs'].map(u=>`<option value="${u}"${g.unit===u?' selected':''}>${UNITS[u]}</option>`).join('')}</select></td>
+   <td><input data-f="pack" type="number" min="0" step="any" value="${g.pack}"></td>
+   <td><input data-f="price" type="number" min="0" step="any" value="${g.price}"></td>
+   <td class="num dim uc">${unitCostText(g)}</td>
+   <td><input data-f="abv" type="number" min="0" max="100" step="any" value="${g.abv}"${ml?'':' disabled'}></td>
+   <td><input data-f="w" type="number" min="0" step="any" value="${ml?g.dens:pcs?g.pw:''}"${ml||pcs?'':' disabled'}></td>
+   <td><input data-f="note" value="${esc(g.note||'')}" placeholder="где взята цена"></td>
+   <td><button class="x" title="Удалить">×</button></td></tr>`;
+}
+function renderIng(){
+  const cats=[...new Set(S.ingredients.map(g=>g.cat))];
+  $('#cats').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
+  const q=$('#ingFilter').value.trim().toLowerCase();
+  const list=S.ingredients.filter(g=>!q||g.name.toLowerCase().includes(q)||g.cat.toLowerCase().includes(q));
+  $('#ingTbl tbody').innerHTML=list.map(ingRow).join('')||'<tr><td colspan="10" class="dim">Ничего не найдено</td></tr>';
+}
+$('#ingFilter').addEventListener('input',renderIng);
+const ingBody=$('#ingTbl tbody');
+ingBody.addEventListener('input',e=>{
+  const f=e.target.dataset.f;if(!f||f==='unit')return;
+  const tr=e.target.closest('tr'),g=ING[tr.dataset.id];if(!g)return;
+  const v=e.target.value;
+  if(f==='name'||f==='cat'||f==='note')g[f]=v;
+  else if(f==='w'){if(g.unit==='ml')g.dens=num(v);else g.pw=num(v)}
+  else g[f]=Math.max(0,num(v));
+  if(f==='pack'&&!g.pack)g.pack=1;
+  $('.uc',tr).textContent=unitCostText(g);
+  save();
+});
+ingBody.addEventListener('change',e=>{
+  const f=e.target.dataset.f;
+  if(f==='unit'){
+    const g=ING[e.target.closest('tr').dataset.id];
+    g.unit=e.target.value;
+    if(g.unit==='ml'&&!g.dens)g.dens=1;
+    if(g.unit==='pcs'&&!g.pw)g.pw=10;
+    save();renderIng();
+  }
+  if(f==='cat'){save()}
+});
+ingBody.addEventListener('click',e=>{
+  const b=e.target.closest('.x');if(!b)return;
+  const id=b.closest('tr').dataset.id,g=ING[id];
+  const used=S.cocktails.filter(c=>c.items.some(it=>it.ing===id)).map(c=>c.name);
+  if(used.length){alert(`«${g.name}» используется в рецептах: ${used.join(', ')}.\nСначала уберите его из этих рецептов.`);return}
+  if(!confirm(`Удалить «${g.name}» из базы?`))return;
+  S.ingredients=S.ingredients.filter(x=>x.id!==id);reindex();save();renderIng();
+});
+$('#bAddIng').addEventListener('click',()=>{
+  const g={id:'u'+Date.now(),name:'Новый ингредиент',cat:'Прочее',unit:'ml',pack:1000,price:0,abv:0,dens:1,pw:0,note:''};
+  S.ingredients.unshift(g);reindex();save();
+  $('#ingFilter').value='';renderIng();
+  const inp=$('#ingTbl tbody tr input');inp.focus();inp.select();
+});
+
+/* ===================== ЭКСПОРТ / ИМПОРТ / СБРОС ===================== */
+$('#btnExport').addEventListener('click',()=>download('cocktail_calc_data.json',JSON.stringify(S,null,1),'application/json'));
+$('#btnImport').addEventListener('click',()=>$('#file').click());
+$('#file').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!valid(d))throw new Error('bad');
+      if(!confirm('Заменить текущие данные данными из файла?'))return;
+      S=d;reindex();openCocktail(S.cocktails.find(c=>c.id===S.current)||S.cocktails[0],true);save();showTab('calc');
+    }catch(err){alert('Не удалось прочитать файл: это не файл данных калькулятора.')}
+  };
+  r.readAsText(f);e.target.value='';
+});
+$('#btnReset').addEventListener('click',()=>{
+  if(!confirm('Вернуть исходные цены и рецепты? Все ваши изменения будут удалены.'))return;
+  S=defaults();reindex();openCocktail(S.cocktails[0],true);save();showTab('calc');
+});
+
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+
+init();
+renderCalc();
+</script>
+</body>
+</html>
