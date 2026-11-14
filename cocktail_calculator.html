@@ -46,6 +46,11 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 td.dim{color:var(--mut)}
 tfoot td{font-weight:700;border-bottom:none;border-top:1px solid var(--line)}
 td select{width:100%}
+textarea{width:100%;background:#120f0d;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit;font-size:15px;color:var(--txt);resize:vertical}
+textarea:focus{outline:2px solid var(--acc)}
+.serve{display:flex;gap:16px;align-items:center}
+.serve svg{width:150px;flex:none}
+.serve p{margin:6px 0 0}
 .x{padding:2px 9px;font-size:18px;line-height:1.2;color:var(--mut)}
 .x:hover{color:var(--bad);border-color:var(--bad)}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -115,6 +120,9 @@ footer{color:var(--mut);font-size:12px;padding:6px 20px 24px;max-width:1280px;ma
           <label class="f">Разбавление, %<input id="rDil" type="number" min="0" max="100" step="1"></label>
           <label class="f">Порций<input id="portions" type="number" min="1" step="1"></label>
         </div>
+        <label class="f" style="margin-bottom:12px">Описание вкуса
+          <textarea id="rTaste" rows="2" placeholder="Например: свежий, цитрусовый, с лёгкой горчинкой"></textarea>
+        </label>
         <div class="scroll">
         <table id="rec">
           <thead><tr>
@@ -153,6 +161,7 @@ footer{color:var(--mut);font-size:12px;padding:6px 20px 24px;max-width:1280px;ma
         <p class="hint" id="modeHint"></p>
       </div>
       <div class="card" id="result"></div>
+      <div class="card" id="serving"></div>
     </div>
   </div>
 </section>
@@ -282,11 +291,136 @@ const COCKTAIL_DATA=[
  ['b52','Б-52 (шот)','layer',[['kahlua',20],['baileys',20],['triple',20]]],
 ];
 
+/* ===================== ВКУС И ПОДАЧА =====================
+   g — бокал, l — слои жидкости сверху вниз [цвет, доля], grad — градиент [верх, низ],
+   ice — лёд, foam — цвет пены, gr — гарнир */
+const INFO={
+ mojito:{taste:'Свежий и лёгкий: прохладная мята и сочный лайм смягчены сладостью сиропа и мягким ромом, содовая добавляет бодрящие пузырьки.',
+  serve:'Хайбол, колотый лёд, веточка мяты, долька лайма, трубочка',
+  art:{g:'highball',l:[['#e4efcf',1]],ice:1,gr:['mint','limewedge','straw']}},
+ margarita:{taste:'Яркая кисло-солёная классика: цитрус лайма и апельсиновая сладость уравновешивают травянистую остроту текилы, солёный ободок усиливает вкус.',
+  serve:'Бокал «маргарита», солёный ободок, без льда, долька лайма',
+  art:{g:'margarita',l:[['#e9edb2',1]],gr:['rimsalt','limewedge']}},
+ cosmo:{taste:'Сладко-кислый и ягодный: терпкая клюква и лайм на мягкой водочной основе, с апельсиновыми нотами ликёра.',
+  serve:'Охлаждённый бокал мартини, без льда, долька лайма',
+  art:{g:'martini',l:[['#e0476f',1]],gr:['limewedge']}},
+ daiquiri:{taste:'Чистый и освежающий: кислинка лайма, лёгкая сладость и мягкий тростниковый вкус рома.',
+  serve:'Охлаждённая купе, без льда, долька лайма',
+  art:{g:'coupe',l:[['#eef2c6',1]],gr:['limewedge']}},
+ negroni:{taste:'Горько-сладкий и насыщенный: травяная горечь кампари, сладость вермута и можжевеловая сухость джина, апельсиновое послевкусие.',
+  serve:'Рокс, крупные кубики льда, долька апельсина',
+  art:{g:'rocks',l:[['#c8302a',1]],ice:1,gr:['orangewheel']}},
+ spritz:{taste:'Лёгкий и игристый: сладко-горький апельсин с травяными нотами, свежесть просекко и содовой.',
+  serve:'Большой бокал для вина, лёд, долька апельсина',
+  art:{g:'wine',l:[['#f28a2c',1]],ice:1,gr:['orangewheel']}},
+ oldfashioned:{taste:'Тёплый и глубокий: ваниль, карамель и дубовые ноты бурбона, лёгкая сладость и пряная горчинка биттера.',
+  serve:'Рокс, крупный лёд, долька апельсина и вишня на шпажке',
+  art:{g:'rocks',l:[['#b8651e',1]],ice:1,gr:['cherry','orangewheel']}},
+ whiskysour:{taste:'Мягкий кисло-сладкий: бархатная пена, лимонная свежесть и сладость на карамельной основе бурбона.',
+  serve:'Рокс со льдом, плотная пена из белка, вишня',
+  art:{g:'rocks',l:[['#d9902f',1]],ice:1,foam:'#f6ecd5',gr:['cherry']}},
+ martini:{taste:'Сухой, чистый и крепкий: можжевеловая свежесть джина, лёгкие травяные ноты вермута и солоноватая оливка.',
+  serve:'Охлаждённый бокал мартини, без льда, оливка на шпажке',
+  art:{g:'martini',l:[['#e6eff0',1]],gr:['olive']}},
+ whiterussian:{taste:'Сливочно-кофейный десерт: мягкий кофейный ликёр со сливками, водка почти не чувствуется.',
+  serve:'Рокс со льдом, сливки поверх кофейного слоя',
+  art:{g:'rocks',l:[['#f1e6d0',.35],['#4a2a18',.65]],ice:1}},
+ pinacolada:{taste:'Тропический и сливочный: сладкий ананас и кокос на мягком роме.',
+  serve:'Бокал «ураган», вишня, долька ананаса, трубочка',
+  art:{g:'hurricane',l:[['#f6f0d2',1]],gr:['straw','lemonwedge','cherry']}},
+ longisland:{taste:'Крепкий, но по вкусу похож на холодный чай с лимоном: цитрус, кола и сразу пять видов спиртного.',
+  serve:'Хайбол со льдом, долька лимона, трубочка',
+  art:{g:'highball',l:[['#b5702a',1]],ice:1,gr:['straw','lemonwedge']}},
+ bloodymary:{taste:'Пряный, солоноватый и овощной: томат, лимон и острота перца (по желанию с вустерским соусом) на водочной основе.',
+  serve:'Хайбол со льдом, стебель сельдерея, долька лимона',
+  art:{g:'highball',l:[['#c0392b',1]],ice:1,gr:['celery','lemonwedge']}},
+ sunrise:{taste:'Сладкий и фруктовый: сочный апельсин и гренадин, мягкая текила; плавный переход цвета от оранжевого к красному.',
+  serve:'Хайбол со льдом, градиент апельсин → гренадин, долька апельсина, вишня, трубочка',
+  art:{g:'highball',grad:['#f6a623','#d1301c'],ice:1,gr:['straw','orangewheel','cherry']}},
+ gintonic:{taste:'Сухой, горьковатый и освежающий: можжевельник джина, хинная горчинка тоника и лайм.',
+  serve:'Хайбол со льдом, долька лайма',
+  art:{g:'highball',l:[['#e8f3f6',1]],ice:1,gr:['limewedge']}},
+ cubalibre:{taste:'Простой и бодрящий: сладкая кола, лайм и мягкий ром.',
+  serve:'Хайбол со льдом, долька лайма, трубочка',
+  art:{g:'highball',l:[['#5a2f1a',1]],ice:1,gr:['straw','limewedge']}},
+ moscowmule:{taste:'Пряный и освежающий: острый имбирь, лайм и пузырьки, всё очень холодное благодаря медной кружке.',
+  serve:'Медная кружка, колотый лёд, лайм и веточка мяты',
+  art:{g:'mug',gr:['mint','limewedge']}},
+ espressomartini:{taste:'Бодрящий кофейный: горьковатый эспрессо, сладость ликёра, густая пена сверху.',
+  serve:'Охлаждённый бокал мартини, густая пена, три кофейных зерна',
+  art:{g:'martini',l:[['#3a2012',1]],foam:'#c9a06c',gr:['beans']}},
+ sidecar:{taste:'Кисло-сладкий и тёплый: коньячные ноты сухофруктов и дуба, апельсин и лимонная кислинка.',
+  serve:'Охлаждённая купе, без льда, долька апельсина',
+  art:{g:'coupe',l:[['#e8a53a',1]],gr:['orangewheel']}},
+ b52:{taste:'Сладкий десертный шот: кофе, сливки и апельсин слоями; пьётся залпом.',
+  serve:'Шот (40–50 мл), три слоя без льда: кофейный ликёр, бейлис, апельсиновый ликёр',
+  art:{g:'shot',l:[['#e8a84a',1],['#d9bf94',1],['#2f1a10',1]]}}
+};
+
+/* геометрия бокалов (viewBox 160×200): d — контур, fill/bot — верх/низ жидкости,
+   cx — ось, gx/gy — точка на ободке для гарнира, stem — ножка, ice — позиции кубиков */
+const GLASSES={
+ highball:{d:'M48 38 L112 38 L106 176 Q106 180 100 180 L60 180 Q54 180 54 176 Z',fill:54,bot:180,cx:80,gx:112,gy:38,
+   ice:[[60,52,22],[84,58,22],[60,82,22],[84,88,22],[62,114,22],[84,120,22],[68,146,22]]},
+ rocks:{d:'M34 100 L126 100 L120 172 Q120 176 114 176 L46 176 Q40 176 40 172 Z',fill:112,bot:176,cx:80,gx:126,gy:100,
+   ice:[[46,106,34],[82,104,34],[62,136,30]]},
+ coupe:{d:'M30 64 Q30 112 80 124 Q130 112 130 64 Z',fill:70,bot:124,cx:80,gx:130,gy:64,stem:[124,168]},
+ martini:{d:'M26 56 L134 56 L80 122 Z',fill:62,bot:122,cx:80,gx:134,gy:56,stem:[122,168]},
+ margarita:{d:'M24 60 L136 60 Q132 94 90 108 L70 108 Q28 94 24 60 Z',fill:66,bot:108,cx:80,gx:136,gy:60,stem:[108,168]},
+ hurricane:{d:'M56 34 Q38 34 50 76 Q64 108 60 136 Q60 150 74 150 L86 150 Q100 150 100 136 Q96 108 110 76 Q122 34 104 34 Z',fill:46,bot:150,cx:80,gx:108,gy:34,stem:[150,170]},
+ wine:{d:'M36 44 Q36 116 80 122 Q124 116 124 44 Z',fill:62,bot:122,cx:80,gx:124,gy:44,stem:[122,168],
+   ice:[[54,70,26],[82,66,26],[68,96,24]]},
+ mug:{d:'M44 54 L112 54 L108 172 Q108 176 102 176 L54 176 Q48 176 48 172 Z',fill:54,bot:176,cx:78,gx:112,gy:54,opaque:true,
+   handle:'M112 72 Q144 72 144 110 Q144 146 110 148'},
+ shot:{d:'M60 108 L100 108 L96 168 Q96 172 92 172 L68 172 Q64 172 64 168 Z',fill:110,bot:172,cx:80,gx:100,gy:108}
+};
+function garnish(k,G){
+  const {cx,gx,gy}=G, lx=2*cx-gx;
+  const wedge=(o,i)=>`<g transform="rotate(-30 ${gx-6} ${gy})"><path d="M${gx-19} ${gy} A13 13 0 0 0 ${gx+7} ${gy} Z" fill="${o}"/><path d="M${gx-15} ${gy+1} A9 9 0 0 0 ${gx+3} ${gy+1} Z" fill="${i}"/></g>`;
+  switch(k){
+    case 'limewedge':return wedge('#7cb342','#d4e8a8');
+    case 'lemonwedge':return wedge('#fbc02d','#fff2a0');
+    case 'orangewheel':{const x=gx-4,y=gy-2;return `<g><circle cx="${x}" cy="${y}" r="13" fill="#fb8c00"/><circle cx="${x}" cy="${y}" r="10" fill="#ffcc80"/><path d="M${x-10} ${y}H${x+10}M${x} ${y-10}V${y+10}M${x-7} ${y-7}L${x+7} ${y+7}M${x+7} ${y-7}L${x-7} ${y+7}" stroke="#fb8c00" stroke-width="1.4"/></g>`}
+    case 'mint':return `<g transform="translate(${cx+4} ${gy+2})"><path d="M0 6L0 -10" stroke="#2e7d32" stroke-width="2"/><ellipse cx="-9" cy="-14" rx="10" ry="5" transform="rotate(-40 -9 -14)" fill="#43a047"/><ellipse cx="9" cy="-15" rx="10" ry="5" transform="rotate(40 9 -15)" fill="#66bb6a"/><ellipse cx="0" cy="-22" rx="9" ry="5" transform="rotate(90 0 -22)" fill="#2e7d32"/></g>`;
+    case 'cherry':return `<path d="M${cx+4} ${gy+16}L${cx+22} ${gy-16}" stroke="#8d6e63" stroke-width="2" stroke-linecap="round"/><circle cx="${cx+22}" cy="${gy-16}" r="6.5" fill="#c62828"/><circle cx="${cx+20}" cy="${gy-18}" r="1.8" fill="#fff" fill-opacity=".6"/>`;
+    case 'olive':return `<path d="M${cx+20} ${gy-14}L${cx-8} ${gy+26}" stroke="#8d6e63" stroke-width="2" stroke-linecap="round"/><ellipse cx="${cx-3}" cy="${gy+19}" rx="7" ry="5" transform="rotate(-55 ${cx-3} ${gy+19})" fill="#7a8f2a"/><circle cx="${cx-5}" cy="${gy+21}" r="2" fill="#d32f2f"/>`;
+    case 'straw':return `<path d="M${cx+6} ${G.fill+20}L${cx+26} ${gy-26}" stroke="#ef5350" stroke-width="5" stroke-linecap="round"/><path d="M${cx+6} ${G.fill+20}L${cx+26} ${gy-26}" stroke="#fff" stroke-width="5" stroke-dasharray="3 7" opacity=".8"/>`;
+    case 'celery':return `<path d="M${cx-6} ${G.fill+30}L${cx-22} ${gy-26}" stroke="#9ccc65" stroke-width="8" stroke-linecap="round"/><ellipse cx="${cx-24}" cy="${gy-30}" rx="8" ry="4.5" transform="rotate(-60 ${cx-24} ${gy-30})" fill="#558b2f"/>`;
+    case 'beans':return [-11,0,11].map(d=>`<ellipse cx="${cx+d}" cy="${G.fill+3}" rx="4.5" ry="3" transform="rotate(${d>0?-20:d<0?20:0} ${cx+d} ${G.fill+3})" fill="#3e2723"/>`).join('');
+    case 'rimsalt':return `<path d="M${lx} ${gy}L${gx} ${gy}" stroke="#fff" stroke-width="4" stroke-dasharray="2 2.5"/>`;
+  }
+  return '';
+}
+function glassSVG(art,method){
+  const fallback={build:'highball',shake:'coupe',stir:'rocks',blend:'hurricane',layer:'shot'};
+  art=art||{g:fallback[method]||'highball',l:[['#d9a441',1]],ice:method==='build'||method==='stir',gr:[]};
+  const G=GLASSES[art.g]||GLASSES.highball, U='g'+(glassSVG.n=(glassSVG.n||0)+1); // уникальные id, чтобы рисунки не мешали друг другу
+  const st='stroke="#efe6dc" stroke-opacity=".7" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"';
+  let s=`<svg viewBox="0 -10 160 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Стандартная подача"><defs><clipPath id="${U}cp"><path d="${G.d}"/></clipPath>`;
+  if(art.grad)s+=`<linearGradient id="${U}lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${art.grad[0]}"/><stop offset="1" stop-color="${art.grad[1]}"/></linearGradient>`;
+  s+=`<linearGradient id="${U}cu" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8d4f26"/><stop offset=".45" stop-color="#e09a62"/><stop offset="1" stop-color="#9a5a2f"/></linearGradient></defs>`;
+  if(G.stem){const [a,b]=G.stem;s+=`<path d="M80 ${a}L80 ${b}M52 ${b+5}Q80 ${b-7} 108 ${b+5}" fill="none" ${st}/>`}
+  if(G.opaque){
+    s+=`<path d="${G.handle}" fill="none" stroke="#b9743f" stroke-width="7" stroke-linecap="round"/><path d="${G.d}" fill="url(#${U}cu)" stroke="#6d3a18" stroke-width="2"/>`;
+    [52,62,72,82,92,102].forEach((x,i)=>s+=`<circle cx="${x}" cy="${G.fill-(i%2?1:4)}" r="6" fill="#fff" fill-opacity=".8"/>`);
+  }else{
+    s+=`<path d="${G.d}" fill="#fff" fill-opacity=".07"/><g clip-path="url(#${U}cp)">`;
+    const top=G.fill,h=G.bot-top;
+    if(art.grad)s+=`<rect x="0" y="${top}" width="160" height="${h}" fill="url(#${U}lg)"/>`;
+    else{let y=top;const tw=art.l.reduce((a,l)=>a+l[1],0);art.l.forEach(([c,w])=>{const hh=h*w/tw;s+=`<rect x="0" y="${y}" width="160" height="${hh+.5}" fill="${c}" fill-opacity=".95"/>`;y+=hh})}
+    if(art.foam)s+=`<rect x="0" y="${top}" width="160" height="9" fill="${art.foam}"/>`;
+    if(art.ice&&G.ice)G.ice.forEach(([x,y,z],i)=>s+=`<rect x="${x}" y="${y}" width="${z}" height="${z}" rx="4" transform="rotate(${i%2?8:-6} ${x+z/2} ${y+z/2})" fill="#fff" fill-opacity=".22" stroke="#fff" stroke-opacity=".5"/>`);
+    s+=`</g><path d="${G.d}" fill="none" ${st}/>`;
+  }
+  (art.gr||[]).forEach(k=>s+=garnish(k,G));
+  return s+'</svg>';
+}
+
 function defaults(){
   return {
     settings:{currency:'₸',mode:'markup',markup:300,foodCost:25,manual:0,round:100,portions:1},
     ingredients:ING_DATA.map(([id,name,cat,unit,pack,price,abv,w,note])=>({id,name,cat,unit,pack,price,abv,dens:unit==='ml'?w:0,pw:unit==='pcs'?w:0,note:note||''})),
-    cocktails:COCKTAIL_DATA.map(([id,name,method,items])=>({id,name,method,dil:METHODS[method][1],items:items.map(([ing,amt])=>({ing,amt}))})),
+    cocktails:COCKTAIL_DATA.map(([id,name,method,items])=>({id,name,method,dil:METHODS[method][1],items:items.map(([ing,amt])=>({ing,amt})),...clone(INFO[id]||{})})),
     current:'mojito'
   };
 }
@@ -297,9 +431,17 @@ function load(){try{const j=localStorage.getItem(LS);return j?JSON.parse(j):null
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function reindex(){ING={};S.ingredients.forEach(g=>ING[g.id]=g)}
 function valid(d){return d&&Array.isArray(d.ingredients)&&Array.isArray(d.cocktails)&&d.settings}
+/* старые сохранения без описания вкуса/подачи: дополняем из встроенных данных */
+function migrate(){
+  S.cocktails.forEach(c=>{
+    const i=INFO[c.id];
+    if(i&&c.taste===undefined){c.taste=i.taste;c.serve=i.serve;c.art=clone(i.art)}
+  });
+}
 function init(){
   const d=load();
   S=valid(d)?d:defaults();
+  migrate();
   reindex();
   openCocktail(S.cocktails.find(c=>c.id===S.current)||S.cocktails[0],true);
 }
@@ -367,11 +509,16 @@ function renderCalc(){
   $('#rName').value=draft.name;
   $('#rMethod').innerHTML=Object.entries(METHODS).map(([k,v])=>`<option value="${k}"${k===draft.method?' selected':''}>${v[0]}</option>`).join('');
   $('#rDil').value=draft.dil;
+  $('#rTaste').value=draft.taste||'';
+  renderServing();
   $('#portions').value=s.portions;
   $(`input[name=mode][value=${s.mode}]`).checked=true;
   $('#markup').value=s.markup;$('#foodCost').value=s.foodCost;$('#manual').value=s.manual;
   $('#round').value=String(s.round);$('#currency').value=s.currency;
   renderRows();
+}
+function renderServing(){
+  $('#serving').innerHTML=`<h2>Стандартная подача</h2><div class="serve">${glassSVG(draft.art,draft.method)}<div><b>${esc(draft.serve||'Подача не описана')}</b><p class="hint">Схематичная иллюстрация</p></div></div>`;
 }
 function renderRows(){
   $('#rec tbody').innerHTML=draft.items.map((it,i)=>`<tr data-i="${i}">
@@ -435,11 +582,12 @@ $('#sel').addEventListener('change',e=>{
 });
 $('#bNew').addEventListener('click',()=>{
   if(dirty&&!confirm('Несохранённые изменения будут потеряны. Продолжить?'))return;
-  draft={id:'',name:'Новый коктейль',method:'shake',dil:METHODS.shake[1],items:[{ing:'vodka',amt:50},{ing:'ice',amt:100}]};
+  draft={id:'',name:'Новый коктейль',method:'shake',dil:METHODS.shake[1],taste:'',serve:'',items:[{ing:'vodka',amt:50},{ing:'ice',amt:100}]};
   dirty=true;renderCalc();
 });
 $('#rName').addEventListener('input',e=>{draft.name=e.target.value;markDirty();renderResult(calc(draft),Math.max(1,Math.floor(num(S.settings.portions))||1))});
 $('#rMethod').addEventListener('change',e=>{draft.method=e.target.value;draft.dil=METHODS[draft.method][1];$('#rDil').value=draft.dil;markDirty();recalc()});
+$('#rTaste').addEventListener('input',e=>{draft.taste=e.target.value;markDirty()});
 $('#rDil').addEventListener('input',e=>{draft.dil=num(e.target.value);markDirty();recalc()});
 $('#portions').addEventListener('input',e=>{S.settings.portions=Math.max(1,Math.floor(num(e.target.value))||1);save();recalc()});
 
@@ -616,7 +764,7 @@ $('#file').addEventListener('change',e=>{
       const d=JSON.parse(r.result);
       if(!valid(d))throw new Error('bad');
       if(!confirm('Заменить текущие данные данными из файла?'))return;
-      S=d;reindex();openCocktail(S.cocktails.find(c=>c.id===S.current)||S.cocktails[0],true);save();showTab('calc');
+      S=d;migrate();reindex();openCocktail(S.cocktails.find(c=>c.id===S.current)||S.cocktails[0],true);save();showTab('calc');
     }catch(err){alert('Не удалось прочитать файл: это не файл данных калькулятора.')}
   };
   r.readAsText(f);e.target.value='';
