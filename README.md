@@ -8,9 +8,11 @@
 
 ## Запуск
 
+Инструмент лежит в папке [`tools/`](tools/); там же [первый промпт (ТЗ), финальный промпт и скриншот](tools/README.md).
+
 **Онлайн (в любом браузере, в том числе на телефоне):** https://cheshirico.github.io/cocktail_costcalculator/
 
-**Офлайн:** установка не нужна. Скачайте [`cocktail_calculator.html`](cocktail_calculator.html) и откройте двойным щелчком в любом браузере (Chrome, Edge, Firefox). Интернет не требуется.
+**Офлайн:** установка не нужна. Скачайте [`tools/cocktail_calculator.html`](tools/cocktail_calculator.html) и откройте двойным щелчком в любом браузере (Chrome, Edge, Firefox). Интернет не требуется.
 
 Прямые ссылки на вкладки: добавьте к адресу `#menu` («Меню и цены») или `#ing` («Ингредиенты»).
 
