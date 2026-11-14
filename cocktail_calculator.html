@@ -49,7 +49,7 @@ td select{width:100%}
 textarea{width:100%;background:#120f0d;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit;font-size:15px;color:var(--txt);resize:vertical}
 textarea:focus{outline:2px solid var(--acc)}
 .serve{display:flex;gap:16px;align-items:center}
-.serve svg{width:190px;flex:none;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+.serve svg{width:230px;max-width:100%;flex:none;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
 .serve p{margin:6px 0 0}
 .x{padding:2px 9px;font-size:18px;line-height:1.2;color:var(--mut)}
 .x:hover{color:var(--bad);border-color:var(--bad)}
@@ -303,7 +303,7 @@ const INFO={
   art:{g:'margarita',l:[['#e9edb2',1]],gr:['rimsalt','limewedge']}},
  cosmo:{taste:'Сладко-кислый и ягодный: терпкая клюква и лайм на мягкой водочной основе, с апельсиновыми нотами ликёра.',
   serve:'Охлаждённый бокал мартини, без льда, долька лайма',
-  art:{g:'martini',l:[['#e0476f',1]],gr:['limewedge']}},
+  art:{g:'martini',l:[['#e0476f',1]],gr:['limewedge'],pr:['cranberry']}},
  daiquiri:{taste:'Чистый и освежающий: кислинка лайма, лёгкая сладость и мягкий тростниковый вкус рома.',
   serve:'Охлаждённая купе, без льда, долька лайма',
   art:{g:'coupe',l:[['#eef2c6',1]],gr:['limewedge']}},
@@ -324,7 +324,7 @@ const INFO={
   art:{g:'martini',l:[['#e6eff0',1]],gr:['olive']}},
  whiterussian:{taste:'Сливочно-кофейный десерт: мягкий кофейный ликёр со сливками, водка почти не чувствуется.',
   serve:'Рокс со льдом, сливки поверх кофейного слоя',
-  art:{g:'rocks',l:[['#f1e6d0',.35],['#4a2a18',.65]],ice:1}},
+  art:{g:'rocks',l:[['#f1e6d0',.35],['#4a2a18',.65]],ice:1,pr:['bean']}},
  pinacolada:{taste:'Тропический и сливочный: сладкий ананас и кокос на мягком роме.',
   serve:'Бокал «ураган», вишня, долька ананаса, трубочка',
   art:{g:'hurricane',l:[['#f6f0d2',1]],gr:['straw','lemonwedge','cherry']}},
@@ -339,7 +339,7 @@ const INFO={
   art:{g:'highball',grad:['#f6a623','#d1301c'],ice:1,gr:['straw','orangewheel','cherry']}},
  gintonic:{taste:'Сухой, горьковатый и освежающий: можжевельник джина, хинная горчинка тоника и лайм.',
   serve:'Хайбол со льдом, долька лайма',
-  art:{g:'highball',l:[['#e8f3f6',1]],ice:1,gr:['limewedge']}},
+  art:{g:'highball',l:[['#e8f3f6',1]],ice:1,gr:['limewedge'],pr:['berry']}},
  cubalibre:{taste:'Простой и бодрящий: сладкая кола, лайм и мягкий ром.',
   serve:'Хайбол со льдом, долька лайма, трубочка',
   art:{g:'highball',l:[['#5a2f1a',1]],ice:1,gr:['straw','limewedge']}},
@@ -354,7 +354,7 @@ const INFO={
   art:{g:'coupe',l:[['#e8a53a',1]],gr:['orangewheel']}},
  b52:{taste:'Сладкий десертный шот: кофе, сливки и апельсин слоями; пьётся залпом.',
   serve:'Шот (40–50 мл), три слоя без льда: кофейный ликёр, бейлис, апельсиновый ликёр',
-  art:{g:'shot',l:[['#e8a84a',1],['#d9bf94',1],['#2f1a10',1]]}}
+  art:{g:'shot',l:[['#e8a84a',1],['#d9bf94',1],['#2f1a10',1]],pr:['bean','orangeslice']}}
 };
 
 /* геометрия бокалов (viewBox 160×200): d — контур, fill/bot — верх/низ жидкости,
@@ -374,33 +374,56 @@ const GLASSES={
    handle:'M112 72 Q144 72 144 110 Q144 146 110 148'},
  shot:{d:'M60 108 L100 108 L96 168 Q96 172 92 172 L68 172 Q64 172 64 168 Z',fill:110,bot:172,cx:80,gx:100,gy:108}
 };
-/* ---------- акварельная рисовка ---------- */
+/* ---------- рисовка «тушь + акварель» (скетч с брызгами краски) ---------- */
+const INK='#242136';
 const HL={highball:'M60 58L63 170',rocks:'M46 108L49 164',coupe:'M38 78Q40 104 62 116',martini:'M38 66L62 96',margarita:'M34 70Q38 92 60 101',
   hurricane:'M62 44Q54 70 66 96Q70 116 68 138',wine:'M44 58Q46 100 70 112',mug:'M54 62L52 166',shot:'M67 116L69 162'};
+const RIM={highball:32,rocks:46,coupe:50,martini:54,margarita:56,hurricane:24,wine:44,mug:34,shot:20};
 const hx=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 const hexOf=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
 const mixC=(a,b,t)=>{const A=hx(a),B=hx(b);return hexOf(A.map((v,i)=>v+(B[i]-v)*t))};
-const lighten=(c,t)=>mixC(c,'#ffffff',t), darken=(c,t)=>mixC(c,'#26160c',t);
+const lighten=(c,t)=>mixC(c,'#ffffff',t), darken=(c,t)=>mixC(c,'#1d1030',t);
+const sat=(c,s)=>{const [r,g,b]=hx(c),y=.3*r+.59*g+.11*b;return hexOf([r,g,b].map(v=>y+(v-y)*s))};
 function rng(seed){let h=2166136261;for(const ch of seed){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}
   return()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 
-function garnish(k,G,U){
-  const {cx,gx,gy}=G, lx=2*cx-gx, W=`filter="url(#${U}w2)"`, ink='#54463a';
-  const wedge=(o,i)=>{const x=gx-6,y=gy;
-    return `<g transform="rotate(-30 ${x} ${y})" ${W}><path d="M${x-13} ${y}A13 13 0 0 0 ${x+13} ${y}Z" fill="${o}" stroke="${darken(o,.4)}" stroke-width="1"/><path d="M${x-10} ${y+1.5}A10 10 0 0 0 ${x+10} ${y+1.5}Z" fill="${i}" opacity=".92"/><path d="M${x} ${y+2}V${y+10}M${x-5} ${y+2}L${x-7} ${y+9}M${x+5} ${y+2}L${x+7} ${y+9}" stroke="#fff" stroke-opacity=".75" stroke-width=".9" fill="none"/></g>`};
-  const leaf=(a,len,c)=>`<g transform="rotate(${a})"><path d="M0 0C-${len*.4} -${len*.25} -${len*.42} -${len*.75} 0 -${len}C${len*.42} -${len*.75} ${len*.4} -${len*.25} 0 0Z" fill="${c}" stroke="${darken(c,.45)}" stroke-width=".8"/><path d="M0 -2L0 -${len*.85}" stroke="${darken(c,.35)}" stroke-width=".7"/></g>`;
+/* долька/колесо цитруса с контуром тушью */
+function wheel(x,y,r,out,inn,rot=0){
+  let l='';for(let i=0;i<8;i++){const a=i*Math.PI/4+rot;l+=`M${x} ${y}L${(x+(r-2.6)*Math.cos(a)).toFixed(1)} ${(y+(r-2.6)*Math.sin(a)).toFixed(1)}`}
+  return `<circle cx="${x}" cy="${y}" r="${r}" fill="${out}"/><circle cx="${x}" cy="${y}" r="${r-2.8}" fill="${inn}"/><path d="${l}" stroke="#fff" stroke-opacity=".85" stroke-width=".9" fill="none"/><circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${INK}" stroke-width="1"/><circle cx="${x}" cy="${y}" r="1.5" fill="#fff"/>`}
+const leaf=(a,len,c)=>`<g transform="rotate(${a})"><path d="M0 0C-${len*.4} -${len*.25} -${len*.42} -${len*.75} 0 -${len}C${len*.42} -${len*.75} ${len*.4} -${len*.25} 0 0Z" fill="${c}" stroke="${INK}" stroke-width=".9"/><path d="M0 -2L0 -${len*.85}" stroke="${INK}" stroke-opacity=".7" stroke-width=".7"/></g>`;
+
+/* предметы, разложенные на листе рядом с бокалом */
+function prop(k,x,y,rot){
+  const t=`transform="rotate(${rot} ${x} ${y})"`;
   switch(k){
-    case 'limewedge':return wedge('#86b83e','#dcecae');
-    case 'lemonwedge':return wedge('#f2c230','#fff2a6');
-    case 'orangewheel':{const x=gx-4,y=gy-2;
-      let seg='';for(let i=0;i<8;i++){const a=i*Math.PI/4;seg+=`M${x} ${y}L${(x+9.5*Math.cos(a)).toFixed(1)} ${(y+9.5*Math.sin(a)).toFixed(1)}`}
-      return `<g ${W}><circle cx="${x}" cy="${y}" r="13" fill="#ee8a1c" stroke="${darken('#ee8a1c',.35)}" stroke-width="1"/><circle cx="${x}" cy="${y}" r="10.2" fill="#fcc56a"/><path d="${seg}" stroke="#fff" stroke-opacity=".85" stroke-width="1" fill="none"/><circle cx="${x}" cy="${y}" r="1.6" fill="#fff" opacity=".8"/></g>`}
-    case 'mint':return `<g transform="translate(${cx+4} ${gy+4})" ${W}><path d="M0 4L0 -8" stroke="#2f6b34" stroke-width="1.6"/>${leaf(-55,17,'#4f9d4f')}${leaf(55,17,'#5fae5a')}${leaf(-20,21,'#3f8a43')}${leaf(22,20,'#6bbd63')}${leaf(0,15,'#2f7a39')}</g>`;
-    case 'cherry':return `<g ${W}><path d="M${cx+4} ${gy+16}L${cx+21} ${gy-14}" stroke="#8d6e63" stroke-width="1.8" stroke-linecap="round"/><path d="M${cx+22} ${gy-14}Q${cx+27} ${gy-22} ${cx+33} ${gy-20}" stroke="#6d4c3d" stroke-width="1.2" fill="none"/><circle cx="${cx+22}" cy="${gy-9}" r="7" fill="#b3202a" stroke="#6d1219" stroke-width=".9"/><ellipse cx="${cx+19.8}" cy="${gy-11.5}" rx="2" ry="1.3" fill="#fff" opacity=".7" transform="rotate(-30 ${cx+19.8} ${gy-11.5})"/></g>`;
-    case 'olive':return `<g ${W}><path d="M${cx+20} ${gy-14}L${cx-8} ${gy+26}" stroke="#8d6e63" stroke-width="1.8" stroke-linecap="round"/><ellipse cx="${cx-3}" cy="${gy+19}" rx="7.5" ry="5.2" transform="rotate(-55 ${cx-3} ${gy+19})" fill="#7d8f35" stroke="#47551a" stroke-width=".9"/><circle cx="${cx-5.5}" cy="${gy+21.5}" r="2" fill="#c62828"/></g>`;
-    case 'straw':return `<g ${W}><path d="M${cx+6} ${G.fill+20}L${cx+26} ${gy-26}" stroke="#d9534f" stroke-width="5" stroke-linecap="round"/><path d="M${cx+6} ${G.fill+20}L${cx+26} ${gy-26}" stroke="#fff" stroke-width="5" stroke-dasharray="3 7" opacity=".85"/><path d="M${cx+26} ${gy-26}L${cx+27} ${gy-28}" stroke="${ink}" stroke-width=".8"/></g>`;
-    case 'celery':return `<g ${W}><path d="M${cx-6} ${G.fill+30}L${cx-22} ${gy-26}" stroke="#a8cf70" stroke-width="8" stroke-linecap="round"/><path d="M${cx-6} ${G.fill+30}L${cx-22} ${gy-26}" stroke="#6d9a36" stroke-width="1.2" stroke-dasharray="1 3" opacity=".8"/><g transform="translate(${cx-23} ${gy-28})">${leaf(-30,12,'#5e9a3a')}${leaf(15,13,'#4e8a30')}${leaf(55,10,'#70aa48')}</g></g>`;
-    case 'beans':return [-11,0,11].map(d=>`<g ${W}><ellipse cx="${cx+d}" cy="${G.fill+3}" rx="4.6" ry="3.2" transform="rotate(${d>0?-20:d<0?20:0} ${cx+d} ${G.fill+3})" fill="#4a2c20" stroke="#24120b" stroke-width=".7"/><path d="M${cx+d-3} ${G.fill+3}Q${cx+d} ${G.fill+1.5} ${cx+d+3} ${G.fill+3}" stroke="#a27a5a" stroke-width=".7" fill="none"/></g>`).join('');
+    case 'limeslice':return `<g ${t}>${wheel(x,y,11,'#76b82e','#e2efa0',rot/57)}</g>`;
+    case 'lemonslice':return `<g ${t}>${wheel(x,y,11,'#efbd22','#fff0a0',rot/57)}</g>`;
+    case 'orangeslice':return `<g ${t}>${wheel(x,y,11.5,'#ee7f14','#fbc060',rot/57)}</g>`;
+    case 'mintleaf':return `<g transform="translate(${x} ${y}) rotate(${rot})">${leaf(-25,15,'#3f9f48')}${leaf(28,14,'#58b24f')}</g>`;
+    case 'cherry':return `<g ${t}><path d="M${x} ${y-4}Q${x+3} ${y-13} ${x+11} ${y-14}" stroke="${INK}" stroke-width="1.1" fill="none"/><circle cx="${x}" cy="${y}" r="6" fill="#b3202a" stroke="${INK}" stroke-width=".9"/><ellipse cx="${x-2}" cy="${y-2.3}" rx="1.8" ry="1.1" fill="#fff" opacity=".75"/></g>`;
+    case 'olive':return `<g ${t}><ellipse cx="${x}" cy="${y}" rx="7" ry="4.8" fill="#7d8f35" stroke="${INK}" stroke-width=".9"/><circle cx="${x+3}" cy="${y}" r="1.8" fill="#c62828"/></g>`;
+    case 'bean':return `<g ${t}><ellipse cx="${x}" cy="${y}" rx="5.5" ry="3.7" fill="#4a2c20" stroke="${INK}" stroke-width=".8"/><path d="M${x-4} ${y}Q${x} ${y-1.8} ${x+4} ${y}" stroke="#d7b08a" stroke-width=".8" fill="none"/></g>`;
+    case 'cranberry':return `<g ${t}>${[[0,0],[8,3],[3,8]].map(([a,b])=>`<circle cx="${x+a}" cy="${y+b}" r="4.4" fill="#b3153a" stroke="${INK}" stroke-width=".8"/><circle cx="${x+a-1.4}" cy="${y+b-1.6}" r="1.2" fill="#fff" opacity=".7"/>`).join('')}</g>`;
+    case 'berry':return `<g ${t}>${[[0,0],[9,2],[4,9]].map(([a,b])=>`<circle cx="${x+a}" cy="${y+b}" r="4.8" fill="#2f3d86" stroke="${INK}" stroke-width=".8"/><circle cx="${x+a-1.5}" cy="${y+b-1.7}" r="1.3" fill="#fff" opacity=".6"/><circle cx="${x+a+1}" cy="${y+b+1}" r=".9" fill="#12163a"/>`).join('')}</g>`;
+  }
+  return '';
+}
+const PROP_OF={limewedge:'limeslice',lemonwedge:'lemonslice',orangewheel:'orangeslice',mint:'mintleaf',cherry:'cherry',olive:'olive',beans:'bean',celery:'mintleaf',rimsalt:'limeslice'};
+
+function garnish(k,G,U){
+  const {cx,gx,gy}=G, lx=2*cx-gx, W=`filter="url(#${U}w2)"`;
+  switch(k){
+    case 'limewedge':return `<g ${W}>${wheel(lx+14,gy-6,14,'#76b82e','#e2efa0',.3)}<path d="M${lx+14} ${gy-6}L${lx+14} ${gy+6}" stroke="${INK}" stroke-width="1"/></g>`;
+    case 'lemonwedge':return `<g ${W}>${wheel(lx+14,gy-6,14,'#efbd22','#fff0a0',.3)}<path d="M${lx+14} ${gy-6}L${lx+14} ${gy+6}" stroke="${INK}" stroke-width="1"/></g>`;
+    case 'orangewheel':return `<g ${W}>${wheel(gx-8,gy-6,13.5,'#ee7f14','#fbc060',.2)}<path d="M${gx-8} ${gy-6}L${gx-8} ${gy+7}" stroke="${INK}" stroke-width="1"/></g>`;
+    case 'mint':return `<g transform="translate(${cx+12} ${gy+3}) rotate(14)" ${W}><path d="M0 4L0 -6" stroke="${INK}" stroke-width="1.2"/>${leaf(-48,18,'#3f9f48')}${leaf(50,17,'#58b24f')}${leaf(-14,22,'#2f8a3e')}${leaf(18,20,'#6cc15a')}${leaf(2,14,'#2a7a38')}</g>`;
+    case 'cherry':return `<g ${W}><path d="M${cx+4} ${gy+16}L${cx+21} ${gy-14}" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/><circle cx="${cx+22}" cy="${gy-9}" r="7" fill="#b3202a" stroke="${INK}" stroke-width="1"/><ellipse cx="${cx+19.8}" cy="${gy-11.5}" rx="2" ry="1.3" fill="#fff" opacity=".75" transform="rotate(-30 ${cx+19.8} ${gy-11.5})"/></g>`;
+    case 'olive':return `<g ${W}><path d="M${cx+20} ${gy-14}L${cx-8} ${gy+26}" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="${cx-3}" cy="${gy+19}" rx="7.5" ry="5.2" transform="rotate(-55 ${cx-3} ${gy+19})" fill="#7d8f35" stroke="${INK}" stroke-width="1"/><circle cx="${cx-5.5}" cy="${gy+21.5}" r="2" fill="#c62828"/></g>`;
+    case 'straw':{const a=`M${cx+4} ${G.fill+22}L${cx+30} ${gy-30}`;
+      return `<g ${W}><path d="${a}" stroke="${INK}" stroke-width="6.4" stroke-linecap="round"/><path d="${a}" stroke="#fff" stroke-width="4.4" stroke-linecap="round"/><path d="${a}" stroke="#2c3e91" stroke-width="4.4" stroke-dasharray="3.4 3.4"/></g>`}
+    case 'celery':return `<g ${W}><path d="M${cx-6} ${G.fill+30}L${cx-22} ${gy-26}" stroke="${INK}" stroke-width="9.6" stroke-linecap="round"/><path d="M${cx-6} ${G.fill+30}L${cx-22} ${gy-26}" stroke="#a8cf70" stroke-width="7.6" stroke-linecap="round"/><g transform="translate(${cx-23} ${gy-28})">${leaf(-30,12,'#4e9a3a')}${leaf(15,13,'#3e8a30')}${leaf(55,10,'#62aa48')}</g></g>`;
+    case 'beans':return [-11,0,11].map(d=>`<g ${W}><ellipse cx="${cx+d}" cy="${G.fill+3}" rx="4.8" ry="3.3" transform="rotate(${d>0?-20:d<0?20:0} ${cx+d} ${G.fill+3})" fill="#4a2c20" stroke="${INK}" stroke-width=".8"/><path d="M${cx+d-3} ${G.fill+3}Q${cx+d} ${G.fill+1.5} ${cx+d+3} ${G.fill+3}" stroke="#d7b08a" stroke-width=".7" fill="none"/></g>`).join('');
     case 'rimsalt':return `<path d="M${lx} ${gy}L${gx} ${gy}" stroke="#c9d4dc" stroke-width="4.4" stroke-dasharray="2 2.4"/><path d="M${lx} ${gy-.6}L${gx} ${gy-.6}" stroke="#fff" stroke-width="2" stroke-dasharray="1.4 3.2"/>`;
   }
   return '';
@@ -410,65 +433,75 @@ function glassSVG(art,method){
   const fb={build:'highball',shake:'coupe',stir:'rocks',blend:'hurricane',layer:'shot'};
   art=art||{g:fb[method]||'highball',l:[['#d9a441',1]],ice:method==='build'||method==='stir',gr:[]};
   const G=GLASSES[art.g]||GLASSES.highball, U='g'+(glassSVG.n=(glassSVG.n||0)+1), f=n=>`filter="url(#${U}${n})"`;
-  const main=G.opaque?'#c97b4a':art.grad?art.grad[1]:art.l[0][0];
-  const R=rng(art.g+main+(art.gr||[]).join()), ink='#54463a', cx=G.cx;
-  const layers=art.grad?[[art.grad[0],1]]:(art.l||[]);
+  const baseCol=G.opaque?'#c97b4a':art.grad?art.grad[1]:art.l[0][0];
+  const main=sat(baseCol,1.25);
+  const R=rng(art.g+baseCol+(art.gr||[]).join()), cx=G.cx;
+  const layers=(art.grad?[[art.grad[0],1]]:(art.l||[])).map(([c,w])=>[sat(c,1.2),w]);
   const base=G.stem?G.stem[1]+6:G.bot+3;
-  let s=`<svg viewBox="-20 -10 200 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Стандартная подача (акварельная иллюстрация)"><defs>
+  let s=`<svg viewBox="-20 -10 200 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Стандартная подача (акварельный скетч с тушью)"><defs>
 <clipPath id="${U}cp"><path d="${G.d}"/></clipPath>
 <clipPath id="${U}lq"><rect x="0" y="${G.fill}" width="160" height="${G.bot-G.fill+2}"/></clipPath>
-<radialGradient id="${U}pg" cx=".5" cy=".42" r=".78"><stop offset="0" stop-color="#fffaf1"/><stop offset=".7" stop-color="#f5ecdb"/><stop offset="1" stop-color="#e6d6b8"/></radialGradient>
-<linearGradient id="${U}cu" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a4a22"/><stop offset=".4" stop-color="#e6a56f"/><stop offset=".75" stop-color="#c07a46"/><stop offset="1" stop-color="#85451f"/></linearGradient>
-<filter id="${U}w2" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
-<filter id="${U}w4" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>
-<filter id="${U}wash" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".02" numOctaves="3" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="3"/></filter>
-<filter id="${U}wc" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation=".6" result="b"/><feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="b" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".75" numOctaves="2" seed="11" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 .5 0 0 0 .62" result="ga"/><feComposite in="d" in2="ga" operator="arithmetic" k1="1" k2="0" k3="0" k4="0"/></filter>
-<filter id="${U}pp" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" seed="5" result="t"/><feColorMatrix in="t" type="matrix" values="0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .26 0 0 0 .32 -.06" result="c"/><feComposite in="c" in2="SourceGraphic" operator="in"/></filter>
-<filter id="${U}b1" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1"/></filter>
-<filter id="${U}b2" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2"/></filter>
-<filter id="${U}b3" x="-60%" y="-120%" width="220%" height="340%"><feGaussianBlur stdDeviation="3.2"/></filter>`;
-  layers.forEach(([c],i)=>{const t=layers.length>1?.1:.3;
-    s+=`<linearGradient id="${U}l${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighten(c,t)}"/><stop offset=".55" stop-color="${c}"/><stop offset="1" stop-color="${darken(c,.12)}"/></linearGradient>`});
-  if(art.grad)s+=`<linearGradient id="${U}gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighten(art.grad[0],.15)}"/><stop offset=".5" stop-color="${art.grad[0]}"/><stop offset=".85" stop-color="${art.grad[1]}"/><stop offset="1" stop-color="${darken(art.grad[1],.15)}"/></linearGradient>`;
+<radialGradient id="${U}pg" cx=".5" cy=".45" r=".8"><stop offset="0" stop-color="#fbf7ec"/><stop offset=".75" stop-color="#f6f0e0"/><stop offset="1" stop-color="#ebe0c8"/></radialGradient>
+<linearGradient id="${U}cu" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a4a22"/><stop offset=".4" stop-color="#ec9d5f"/><stop offset=".75" stop-color="#c8742f"/><stop offset="1" stop-color="#7a3c18"/></linearGradient>
+<filter id="${U}w2" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/></filter>
+<filter id="${U}sp" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".12" numOctaves="2" seed="13" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.4" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation=".35"/></filter>
+<filter id="${U}wc" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation=".7" result="b"/><feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="b" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="11" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 .55 0 0 0 .58" result="ga"/><feComposite in="d" in2="ga" operator="arithmetic" k1="1" k2="0" k3="0" k4="0"/></filter>
+<filter id="${U}pp" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" seed="5" result="t"/><feColorMatrix in="t" type="matrix" values="0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .26 0 0 0 .3 -.05" result="c"/><feComposite in="c" in2="SourceGraphic" operator="in"/></filter>
+<filter id="${U}b1" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation=".7"/></filter>
+<filter id="${U}b2" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>
+<filter id="${U}b3" x="-60%" y="-120%" width="220%" height="340%"><feGaussianBlur stdDeviation="3"/></filter>`;
+  layers.forEach(([c],i)=>{const t=layers.length>1?.08:.14;
+    s+=`<linearGradient id="${U}l${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighten(c,t)}"/><stop offset=".5" stop-color="${c}"/><stop offset=".85" stop-color="${darken(c,.22)}"/><stop offset="1" stop-color="${darken(c,.42)}"/></linearGradient>`});
+  if(art.grad)s+=`<linearGradient id="${U}gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighten(sat(art.grad[0],1.2),.1)}"/><stop offset=".5" stop-color="${sat(art.grad[0],1.2)}"/><stop offset=".85" stop-color="${sat(art.grad[1],1.2)}"/><stop offset="1" stop-color="${darken(sat(art.grad[1],1.2),.4)}"/></linearGradient>`;
   s+='</defs>';
-  /* бумага */
-  s+=`<g ${f('w4')}><rect x="-18" y="-8" width="196" height="206" rx="3" fill="url(#${U}pg)"/><rect x="-18" y="-8" width="196" height="206" rx="3" fill="#000" ${f('pp')}/></g>`;
-  /* фоновое пятно краски, тень, брызги */
-  const top0=G.gy-28,mid=(top0+base)/2,k=Math.max(1,Math.min(1.35,150/(base-top0)));
-  s+=`<g transform="translate(80 95) scale(${k.toFixed(3)}) translate(-80 ${(-mid).toFixed(1)})">`; // центрируем рисунок на листе
-  s+=`<ellipse cx="${cx}" cy="${(G.gy+G.bot)/2}" rx="68" ry="64" fill="${lighten(main,.12)}" opacity=".2" ${f('wash')}/>`;
-  s+=`<ellipse cx="${cx}" cy="${base}" rx="46" ry="6.5" fill="#6f7f93" opacity=".32" ${f('b3')}/>`;
-  for(let i=0;i<9;i++){const left=R()<.5,x=left?-13+R()*21:148+R()*22,y=-8+R()*196,r=.8+R()*2.4;
-    s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${R()<.6?main:lighten(main,.25)}" opacity="${(.3+R()*.3).toFixed(2)}"/>`}
+  /* лист бумаги */
+  s+=`<g><rect x="-18" y="-8" width="196" height="206" rx="2" fill="url(#${U}pg)"/><rect x="-18" y="-8" width="196" height="206" rx="2" fill="#000" ${f('pp')}/></g>`;
+  /* предметы на листе */
+  const pr=[...(art.pr||[]),...(art.gr||[]).map(k=>PROP_OF[k]).filter(Boolean)].filter((k,i,a)=>a.indexOf(k)===i).slice(0,3);
+  [[138,176,18],[116,189,-30],[154,152,40]].slice(0,pr.length).forEach(([x,y,r],i)=>s+=`<g ${f('w2')}>${prop(pr[i],x,y,r)}</g>`);
+  /* рисунок: наклон + центровка */
+  const top0=G.gy-30,mid=(top0+base)/2,k=Math.max(.8,Math.min(1.3,150/(base-top0)));
+  s+=`<g transform="translate(80 95) rotate(15) scale(${k.toFixed(3)}) translate(-80 ${(-mid).toFixed(1)})">`;
+  /* брызги краски */
+  const ACC={limewedge:'#76b82e',lemonwedge:'#f0c030',orangewheel:'#ee7f14',mint:'#3f9f48',cherry:'#c2263a',olive:'#7d8f35',beans:'#6a4430',celery:'#6aa83a',straw:'#2c3e91',rimsalt:'#5f9fc8'};
+  const acc=(art.gr||[]).map(k=>ACC[k]).filter(Boolean);
+  const pal=[main,lighten(main,.15),mixC(main,'#5b3fa0',.5),mixC(main,'#e0508a',.45),darken(main,.2),mixC(main,'#3d6fd0',.4),...acc,...acc,...acc];
+  const sy0=G.fill-34,sy1=G.bot+30;
+  for(let i=0;i<44;i++){const left=R()<.5,x=left?-8+R()*58:112+R()*60,y=sy0+R()*(sy1-sy0),big=R()<.16,r=big?2.6+R()*3.4:.6+R()*1.7;
+    s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${pal[Math.floor(R()*pal.length)]}" opacity="${(.45+R()*.4).toFixed(2)}" ${f('sp')}/>`}
+  for(let i=0;i<7;i++){const left=R()<.5,x=left?2+R()*44:114+R()*46,y=sy0+10+R()*(sy1-sy0-20);
+    s+=`<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${(3+R()*5).toFixed(1)}" ry="${(1.5+R()*2.5).toFixed(1)}" transform="rotate(${(R()*180).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})" fill="${pal[Math.floor(R()*pal.length)]}" opacity="${(.35+R()*.3).toFixed(2)}" ${f('sp')}/>`}
   /* ножка */
   if(G.stem){const [a,b]=G.stem,d=`M80 ${a}L80 ${b}M52 ${b+5}Q80 ${b-7} 108 ${b+5}`;
-    s+=`<path d="${d}" fill="none" stroke="#a9bccb" stroke-opacity=".5" stroke-width="5" stroke-linecap="round" ${f('w2')}/><path d="${d}" fill="none" stroke="${ink}" stroke-width="1.1" stroke-linecap="round" ${f('w2')}/>`}
+    s+=`<path d="${d}" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round" ${f('w2')}/>`}
   if(G.opaque){
-    /* медная кружка */
-    s+=`<path d="${G.handle}" fill="none" stroke="#8a4a22" stroke-width="9" stroke-linecap="round" ${f('w2')}/><path d="${G.handle}" fill="none" stroke="#e0a06a" stroke-width="3.5" stroke-linecap="round" opacity=".85" ${f('w2')}/>`;
+    s+=`<path d="${G.handle}" fill="none" stroke="${INK}" stroke-width="10" stroke-linecap="round" ${f('w2')}/><path d="${G.handle}" fill="none" stroke="#c8742f" stroke-width="7.6" stroke-linecap="round" ${f('w2')}/><path d="${G.handle}" fill="none" stroke="#f0b883" stroke-width="2.4" stroke-linecap="round" opacity=".8" ${f('w2')}/>`;
     s+=`<g ${f('wc')}><path d="${G.d}" fill="url(#${U}cu)"/></g>`;
-    for(let i=0;i<7;i++)s+=`<ellipse cx="${(52+R()*52).toFixed(0)}" cy="${(70+R()*95).toFixed(0)}" rx="${(3+R()*4).toFixed(1)}" ry="${(2+R()*3).toFixed(1)}" fill="#ffd9b0" opacity=".22" ${f('b1')}/>`;
-    s+=`<ellipse cx="${cx}" cy="${G.fill}" rx="34" ry="4.6" fill="#5a3015" ${f('w2')}/>`;
-    [52,62,72,82,92,102].forEach((x,i)=>s+=`<circle cx="${x}" cy="${G.fill-(i%2?1:4)}" r="6" fill="#f2f8fc" fill-opacity=".85" stroke="#8fb0c4" stroke-width=".9" ${f('w2')}/>`);
-    s+=`<path d="${G.d}" fill="none" stroke="${ink}" stroke-width="1.3" ${f('w2')}/>`;
+    for(let i=0;i<7;i++)s+=`<ellipse cx="${(52+R()*52).toFixed(0)}" cy="${(70+R()*95).toFixed(0)}" rx="${(3+R()*4).toFixed(1)}" ry="${(2+R()*3).toFixed(1)}" fill="#ffe0bc" opacity=".25" ${f('b1')}/>`;
+    s+=`<ellipse cx="${cx}" cy="${G.fill}" rx="34" ry="4.6" fill="#4a2410" ${f('w2')}/>`;
+    [52,62,72,82,92,102].forEach((x,i)=>s+=`<circle cx="${x}" cy="${G.fill-(i%2?1:4)}" r="6" fill="#fffdf6" fill-opacity=".92" stroke="${INK}" stroke-width=".8" ${f('w2')}/>`);
+    s+=`<path d="${G.d}" fill="none" stroke="${INK}" stroke-width="1.6" ${f('w2')}/>`;
   }else{
-    s+=`<path d="${G.d}" fill="#bfd3df" fill-opacity=".22" ${f('w2')}/>`;
     const top=G.fill,h=G.bot-top;
     s+=`<g clip-path="url(#${U}cp)"><g clip-path="url(#${U}lq)"><g ${f('wc')}>`;
     if(art.grad)s+=`<rect x="0" y="${top}" width="160" height="${h}" fill="url(#${U}gr)"/>`;
     else{let y=top;const tw=layers.reduce((a,l)=>a+l[1],0);layers.forEach(([c,w],i)=>{const hh=h*w/tw;s+=`<rect x="0" y="${(y-(i?2:0)).toFixed(1)}" width="160" height="${(hh+(i?2.5:.5)).toFixed(1)}" fill="url(#${U}l${i})"/>`;y+=hh})}
     s+='</g>';
-    s+=`<path d="${G.d}" fill="none" stroke="${darken(main,.32)}" stroke-width="8" opacity=".3" ${f('b2')}/>`;
-    for(let i=0;i<3;i++)s+=`<ellipse cx="${(cx-14+R()*28).toFixed(0)}" cy="${(top+h*(.25+R()*.6)).toFixed(0)}" rx="${(12+R()*10).toFixed(0)}" ry="${(9+R()*13).toFixed(0)}" fill="${R()<.5?lighten(main,.38):darken(main,.2)}" opacity=".32" ${f('b3')}/>`;
-    if(art.foam){s+=`<g ${f('w2')}><rect x="0" y="${top}" width="160" height="9" fill="${art.foam}"/><rect x="0" y="${top+7}" width="160" height="3" fill="${darken(art.foam,.18)}" opacity=".45"/>`;
-      for(let i=0;i<7;i++)s+=`<circle cx="${(cx-22+R()*44).toFixed(0)}" cy="${(top+2+R()*5).toFixed(1)}" r="${(.8+R()*1.1).toFixed(1)}" fill="#fff" opacity=".7"/>`;
+    s+=`<path d="${G.d}" fill="none" stroke="${darken(main,.45)}" stroke-width="9" opacity=".5" ${f('b2')}/>`;
+    for(let i=0;i<4;i++)s+=`<ellipse cx="${(cx-16+R()*32).toFixed(0)}" cy="${(top+h*(.25+R()*.65)).toFixed(0)}" rx="${(7+R()*10).toFixed(0)}" ry="${(10+R()*16).toFixed(0)}" fill="${R()<.4?lighten(main,.3):darken(main,.3)}" opacity=".42" ${f('b3')}/>`;
+    if(art.foam){s+=`<g ${f('w2')}><rect x="0" y="${top}" width="160" height="9" fill="${art.foam}"/><rect x="0" y="${top+7}" width="160" height="3" fill="${darken(art.foam,.2)}" opacity=".5"/>`;
+      for(let i=0;i<7;i++)s+=`<circle cx="${(cx-22+R()*44).toFixed(0)}" cy="${(top+2+R()*5).toFixed(1)}" r="${(.8+R()*1.1).toFixed(1)}" fill="#fff" opacity=".75"/>`;
       s+='</g>'}
     s+='</g>';
-    if(art.ice&&G.ice)G.ice.forEach(([x,y,z],i)=>s+=`<g transform="rotate(${i%2?8:-6} ${x+z/2} ${y+z/2})" ${f('w2')}><rect x="${x}" y="${y}" width="${z}" height="${z}" rx="4" fill="#eef6fb" fill-opacity=".4" stroke="#7ea4bb" stroke-opacity=".8" stroke-width="1"/><path d="M${x+3.5} ${y+4}L${x+3.5} ${y+z-6}M${x+6} ${y+3.5}L${x+z-7} ${y+3.5}" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/></g>`);
+    /* лёд: бумага не закрашена, кубики обведены тушью */
+    if(art.ice&&G.ice)G.ice.forEach(([x,y,z],i)=>s+=`<g transform="rotate(${i%2?8:-6} ${x+z/2} ${y+z/2})" ${f('w2')}><rect x="${x}" y="${y}" width="${z}" height="${z}" rx="4" fill="#fffdf6" fill-opacity=".82" stroke="${INK}" stroke-opacity=".85" stroke-width=".9"/><rect x="${x+3}" y="${y+3}" width="${z-6}" height="${z-6}" rx="2.5" fill="${lighten(main,.55)}" opacity=".28"/><path d="M${x+3.5} ${y+4}L${x+3.5} ${y+z-6}" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></g>`);
     s+='</g>';
-    s+=`<path d="${G.d}" fill="none" stroke="${ink}" stroke-width="1.3" stroke-linejoin="round" ${f('w2')}/><path d="${G.d}" transform="translate(.9 .7)" fill="none" stroke="${ink}" stroke-width=".6" opacity=".4" ${f('w2')}/>`;
+    /* контур тушью: двойная линия + эллипс края */
+    s+=`<path d="${G.d}" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round" ${f('w2')}/><path d="${G.d}" transform="translate(1 .8)" fill="none" stroke="${INK}" stroke-width=".7" opacity=".5" ${f('w2')}/>`;
+    const rx=RIM[art.g]||30;
+    s+=`<ellipse cx="${cx}" cy="${G.gy}" rx="${rx}" ry="${(rx*.11).toFixed(1)}" fill="#fff" fill-opacity=".3" stroke="${INK}" stroke-width="1.1" ${f('w2')}/>`;
   }
-  s+=`<path d="${HL[art.g]||HL.highball}" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" opacity="${G.opaque?.45:.7}" ${f('b1')}/>`;
+  s+=`<path d="${HL[art.g]||HL.highball}" fill="none" stroke="#fffdf6" stroke-width="4" stroke-linecap="round" opacity="${G.opaque?.5:.85}" ${f('b1')}/>`;
   (art.gr||[]).forEach(k=>s+=garnish(k,G,U));
   return s+'</g></svg>';
 }
@@ -575,7 +608,7 @@ function renderCalc(){
   renderRows();
 }
 function renderServing(){
-  $('#serving').innerHTML=`<h2>Стандартная подача</h2><div class="serve">${glassSVG(draft.art,draft.method)}<div><b>${esc(draft.serve||'Подача не описана')}</b><p class="hint">Акварельная иллюстрация</p></div></div>`;
+  $('#serving').innerHTML=`<h2>Стандартная подача</h2><div class="serve">${glassSVG(draft.art,draft.method)}<div><b>${esc(draft.serve||'Подача не описана')}</b><p class="hint">Акварельный скетч с тушью</p></div></div>`;
 }
 function renderRows(){
   $('#rec tbody').innerHTML=draft.items.map((it,i)=>`<tr data-i="${i}">
